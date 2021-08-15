@@ -57,3 +57,4 @@ jitwatch.out
 project/**/metals.sbt
 
 *.txt
+.scalafmt.conf
