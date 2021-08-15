@@ -53,6 +53,7 @@ jitwatch.out
 # metals
 .metals
 .bloop
+.bsp
 project/**/metals.sbt
 
 *.txt
