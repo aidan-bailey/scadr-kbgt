@@ -1,6 +1,6 @@
 # KBGen
 
-[sbt]{https://www.scala-sbt.org/1.x/docs/Setup.html} is required to build the project.
+[sbt](https://www.scala-sbt.org/1.x/docs/Setup.html) is required to build the project.
 
 From the main directory, run
 
