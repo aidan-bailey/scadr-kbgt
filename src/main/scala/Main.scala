@@ -39,9 +39,17 @@ object Main extends App {
               c.copy(distributionOption = DistributionOption.Linear)
             case "exponential" =>
               c.copy(distributionOption = DistributionOption.Exponential)
+            case "peak" =>
+              c.copy(distributionOption = DistributionOption.Peak)
+            case "trough" =>
+              c.copy(distributionOption = DistributionOption.Trough)
+            case "random" =>
+              c.copy(distributionOption = DistributionOption.Random)
           }
         )
-        .text("distribution option {linear, exponential}"),
+        .text(
+          "distribution option {linear, exponential, peak, trough, random}"
+        ),
       opt[String]('o', "out")
         .valueName("<filename>")
         .action((x, c) => c.copy(filename = x))

@@ -14,7 +14,7 @@ case class Config(
 )
 
 object DistributionOption extends Enumeration {
-  val Linear, Exponential = Value
+  val Linear, Exponential, Peak, Trough, Random = Value
 }
 
 object StatementOption extends Enumeration {
@@ -41,7 +41,7 @@ object KBGenerator {
     def verbosePrint(message: String) = if (cfg.verbose) println(message)
     var random = new Random()
     var nodeID: BigInt = 0
-    var maxStates = cfg.rankCount * cfg.avgRankLength;
+    //var maxStates = cfg.rankCount * cfg.avgRankLength;
     var dkb = new DefeasibleKnowledgeBase(List())
     var ckb = new KnowledgeBase(List())
     var contraAtom: Formula = Atom(nodeID.toString())
@@ -51,6 +51,7 @@ object KBGenerator {
     dkb = dkb.incl(DefeasibleImplication(rootAtom, contraAtom))
     verbosePrint(s"Added rank 1/${cfg.rankCount}")
     var current = rootAtom
+    var prevRanks = 0
     for (rankNo <- 1 to cfg.rankCount - 1) {
       contraAtom = contraAtom.negate()
       var atom = Atom(nodeID.toString())
@@ -58,16 +59,28 @@ object KBGenerator {
       var ranks = cfg.distributionOption match {
         case DistributionOption.Linear => cfg.avgRankLength
         case DistributionOption.Exponential =>
-          math.max(
-            math
-              .round(
-                maxStates * math
-                  .pow(rankNo.toDouble / cfg.rankCount.toDouble, 2)
-              )
-              .toInt,
-            1
-          )
-
+          math
+            .ceil(
+              cfg.avgRankLength * math
+                .pow(rankNo.toDouble / cfg.rankCount.toDouble, 2)
+            )
+            .toInt
+        case DistributionOption.Peak =>
+          math
+            .ceil(
+              cfg.avgRankLength * math
+                .sin(math.Pi * rankNo.toDouble / cfg.rankCount.toDouble)
+            )
+            .toInt
+        case DistributionOption.Trough =>
+          math
+            .ceil(
+              cfg.avgRankLength * (-math
+                .sin(math.Pi * rankNo.toDouble / cfg.rankCount.toDouble) + 1)
+            )
+            .toInt
+        case DistributionOption.Random =>
+          random.nextInt(cfg.avgRankLength - 1) + 1
       }
       if (cfg.statementOption.equals(StatementOption.Defeasible))
         ranks = ranks / 2
