@@ -6,7 +6,7 @@ import scala.util.Random
 
 case class Config(
     rankCount: Int = -1,
-    avgRankLength: Int = -1,
+    maxStates: Int = -1,
     filename: String = "",
     verbose: Boolean = false,
     statementOption: StatementOption.Value = StatementOption.MaxClassical,
@@ -41,7 +41,6 @@ object KBGenerator {
     def verbosePrint(message: String) = if (cfg.verbose) println(message)
     var random = new Random()
     var nodeID: BigInt = 0
-    //var maxStates = cfg.rankCount * cfg.avgRankLength;
     var dkb = new DefeasibleKnowledgeBase(List())
     var ckb = new KnowledgeBase(List())
     var contraAtom: Formula = Atom(nodeID.toString())
@@ -57,30 +56,30 @@ object KBGenerator {
       var atom = Atom(nodeID.toString())
       nodeID += 1
       var ranks = cfg.distributionOption match {
-        case DistributionOption.Linear => cfg.avgRankLength
+        case DistributionOption.Linear => cfg.maxStates
         case DistributionOption.Exponential =>
           math
             .ceil(
-              cfg.avgRankLength * math
+              cfg.maxStates * math
                 .pow(rankNo.toDouble / cfg.rankCount.toDouble, 2)
             )
             .toInt
         case DistributionOption.Peak =>
           math
             .ceil(
-              cfg.avgRankLength * math
+              cfg.maxStates * math
                 .sin(math.Pi * rankNo.toDouble / cfg.rankCount.toDouble)
             )
             .toInt
         case DistributionOption.Trough =>
           math
             .ceil(
-              cfg.avgRankLength * (-math
+              cfg.maxStates * (-math
                 .sin(math.Pi * rankNo.toDouble / cfg.rankCount.toDouble) + 1)
             )
             .toInt
         case DistributionOption.Random =>
-          random.nextInt(cfg.avgRankLength - 1) + 1
+          random.nextInt(cfg.maxStates - 1) + 1
       }
       if (cfg.statementOption.equals(StatementOption.Defeasible))
         ranks = ranks / 2

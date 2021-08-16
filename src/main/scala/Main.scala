@@ -10,15 +10,15 @@ object Main extends App {
     OParser.sequence(
       programName("kbgen"),
       head("kbgen", "1.0"),
-      opt[Int]('c', "count")
+      opt[Int]('r', "ranks")
         .required()
         .action((x, c) => c.copy(rankCount = x))
-        .text("rank count"),
-      opt[Int]('a', "average")
+        .text("number of ranks"),
+      opt[Int]('s', "states")
         .required()
-        .action((x, c) => c.copy(avgRankLength = x))
-        .text("average rank size"),
-      opt[String]('s', "statements")
+        .action((x, c) => c.copy(maxStates = x))
+        .text("maximum number of states per rank"),
+      opt[String]('t', "type")
         .valueName("<opt>")
         .action((x, c) =>
           x match {
@@ -30,7 +30,7 @@ object Main extends App {
               c.copy(statementOption = StatementOption.Mixed)
           }
         )
-        .text("statement option {classical, defeasible, mixed}"),
+        .text("statement types {classical, defeasible, mixed}"),
       opt[String]('d', "distribution")
         .valueName("<opt>")
         .action((x, c) =>
