@@ -39,8 +39,7 @@ object Main extends App {
               c.copy(distributionOption = DistributionOption.Linear)
             case "exponential" =>
               c.copy(distributionOption = DistributionOption.Exponential)
-            case "peak" =>
-              c.copy(distributionOption = DistributionOption.Peak)
+            case "peak" => c.copy(distributionOption = DistributionOption.Peak)
             case "trough" =>
               c.copy(distributionOption = DistributionOption.Trough)
             case "random" =>
