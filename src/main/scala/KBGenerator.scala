@@ -14,7 +14,7 @@ case class Config(
 )
 
 object DistributionOption extends Enumeration {
-  val Linear, Exponential, Normal, Trough, Random = Value
+  val Linear, Exponential, Normal, InvertedNormal, Random = Value
 }
 
 object StatementOption extends Enumeration {
@@ -39,6 +39,7 @@ object KBGenerator {
       cfg: Config
   ): (DefeasibleKnowledgeBase, KnowledgeBase) = {
     def verbosePrint(message: String) = if (cfg.verbose) println(message)
+    val stateCount = cfg.maxStates * cfg.rankCount
     var random = new Random()
     var nodeID: BigInt = 0
     var dkb = new DefeasibleKnowledgeBase(List())
@@ -53,6 +54,7 @@ object KBGenerator {
     var prevRanks = 0
     for (rankNo <- 1 to cfg.rankCount - 1) {
       contraAtom = contraAtom.negate()
+      val stateCount = cfg.maxStates * cfg.rankCount
       var atom = Atom(nodeID.toString())
       nodeID += 1
       var ranks = cfg.distributionOption match {
@@ -67,23 +69,32 @@ object KBGenerator {
         case DistributionOption.Normal =>
           math
             .max(
-              cfg.maxStates * math.Pi *
-                (math.pow(
-                  math.E,
-                  -math.pow(
-                    10 * rankNo.toDouble / cfg.rankCount.toDouble - 5,
-                    2
-                  ) / (2 * math
-                    .pow(1.25, 2))
-                )) / (1.25 * math.sqrt(2 * math.Pi)),
+              stateCount * math.pow(
+                math.E,
+                -math.pow(rankNo - (cfg.rankCount.toDouble / 2), 2) / (2 * math
+                  .pow((cfg.rankCount.toDouble / 2) / 4, 2))
+              ) / (((cfg.rankCount.toDouble / 2) / 4) * math.sqrt(2 * math.Pi)),
               1
             )
             .toInt
-        case DistributionOption.Trough =>
+        case DistributionOption.InvertedNormal =>
           math
-            .ceil(
-              cfg.maxStates * (-math
-                .sin(math.Pi * rankNo.toDouble / cfg.rankCount.toDouble) + 1)
+            .max(
+              stateCount * (math.pow(
+                math.E,
+                -math.pow(
+                  (cfg.rankCount.toDouble / 2).toInt - (cfg.rankCount.toDouble / 2),
+                  2
+                ) / (2 * math
+                  .pow((cfg.rankCount.toDouble / 2) / 4, 2))
+              ) / (((cfg.rankCount.toDouble / 2) / 4) * math
+                .sqrt(2 * math.Pi)) - math.pow(
+                math.E,
+                -math.pow(rankNo - (cfg.rankCount.toDouble / 2), 2) / (2 * math
+                  .pow((cfg.rankCount.toDouble / 2) / 4, 2))
+              ) / (((cfg.rankCount.toDouble / 2) / 4) * math
+                .sqrt(2 * math.Pi))),
+              1
             )
             .toInt
         case DistributionOption.Random =>

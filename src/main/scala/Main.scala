@@ -41,14 +41,14 @@ object Main extends App {
               c.copy(distributionOption = DistributionOption.Exponential)
             case "normal" =>
               c.copy(distributionOption = DistributionOption.Normal)
-            case "trough" =>
-              c.copy(distributionOption = DistributionOption.Trough)
+            case "inverted-normal" =>
+              c.copy(distributionOption = DistributionOption.InvertedNormal)
             case "random" =>
               c.copy(distributionOption = DistributionOption.Random)
           }
         )
         .text(
-          "distribution option {linear, exponential, normal, trough, random}"
+          "distribution option {linear, exponential, normal, inverted-normal, random}"
         ),
       opt[String]('o', "out")
         .valueName("<filename>")
