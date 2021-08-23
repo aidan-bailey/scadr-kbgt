@@ -14,7 +14,7 @@ case class Config(
 )
 
 object DistributionOption extends Enumeration {
-  val Linear, Exponential, Peak, Trough, Random = Value
+  val Linear, Exponential, Normal, Trough, Random = Value
 }
 
 object StatementOption extends Enumeration {
@@ -64,11 +64,19 @@ object KBGenerator {
                 .pow(rankNo.toDouble / cfg.rankCount.toDouble, 2)
             )
             .toInt
-        case DistributionOption.Peak =>
+        case DistributionOption.Normal =>
           math
-            .ceil(
-              cfg.maxStates * math
-                .sin(math.Pi * rankNo.toDouble / cfg.rankCount.toDouble)
+            .max(
+              cfg.maxStates * math.Pi *
+                (math.pow(
+                  math.E,
+                  -math.pow(
+                    10 * rankNo.toDouble / cfg.rankCount.toDouble - 5,
+                    2
+                  ) / (2 * math
+                    .pow(1.25, 2))
+                )) / (1.25 * math.sqrt(2 * math.Pi)),
+              1
             )
             .toInt
         case DistributionOption.Trough =>
