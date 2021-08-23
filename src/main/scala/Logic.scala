@@ -10,7 +10,21 @@ object BinOp extends Operation {
 
   /** Maps to symbolic representation. */
   val symbolMap: Map[BinOp.Value, String] =
-    Map(And -> "∧", Or -> "∨", Implies -> "=>", Iff -> "↔")
+    Map(
+      And -> "& ",
+      Or -> "| ",
+      Implies -> ">",
+      Iff -> "="
+     )
+    /*
+    Map(
+      And -> "\\land ",
+      Or -> "\\vee ",
+      Implies -> "\\rightarrow ",
+      Iff -> "\\leftrightarrow "
+    )
+     */
+  //Map(And -> "∧", Or -> "∨", Implies -> "=>", Iff -> "↔")
   //Map(AND -> "∧", OR -> "∨", IMPLIES -> "→", IFF -> "↔")
 
   /** Maps to function. */
@@ -33,11 +47,14 @@ object UnOp extends Operation {
   val symbolMap: Map[UnOp.Value, String] =
     //Map(Not -> "¬")
     Map(Not -> "!")
+    //Map(Not -> "\\neg ")
+    //Map(Not -> "~")
 
   /** Maps to function. */
   val functionMap: Map[UnOp.Value, Boolean => Boolean] = Map(
     Not -> ((p: Boolean) => !p)
   )
+
 }
 
 /** Defines a propositional formula. */
@@ -86,7 +103,7 @@ sealed abstract trait Formula {
   def entails(formula: Formula): Boolean = models().subsetOf(formula.models())
 
   /** Checks validity. */
-  def isValid(): Boolean = world().forall(v => evaluate(v))
+  def isValid(): Boolean = models().size == math.pow(2, atoms().size)
 
 }
 
@@ -106,10 +123,6 @@ case class Atom(name: String) extends Formula {
 
   /** toString override. */
   override def toString(): String = name
-
-  def flipped(): Formula = {
-    return UnCon(UnOp.Not, this);
-  }
 
 }
 
