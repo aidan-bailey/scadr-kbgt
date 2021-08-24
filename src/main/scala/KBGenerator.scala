@@ -28,9 +28,21 @@ object KBGenerator {
     var ckb = new ClassicalKnowledgeBase(List())
     var contraAtom: Formula = Atom(nodeID.toString())
     nodeID += 1
+    var ranks = DistributionOption.getStateCount(cfg, 1)
+    for (rankIndex <- 0 to ranks - 2) {
+      var rootAtom = Atom(nodeID.toString())
+      nodeID += 1
+      dkb = dkb.incl(DefeasibleImplication(rootAtom, contraAtom))
+      verbosePrint(
+        s"Added statement ${rankIndex + 1}/${ranks} to rank 0"
+      )
+    }
     var rootAtom = Atom(nodeID.toString())
     nodeID += 1
     dkb = dkb.incl(DefeasibleImplication(rootAtom, contraAtom))
+    verbosePrint(
+      s"Added statement ${ranks}/${ranks} to rank 0"
+    )
     verbosePrint(s"Added rank 1/${cfg.rankCount}")
     var current = rootAtom
     val stateCount = cfg.meanStates * cfg.rankCount
@@ -38,7 +50,7 @@ object KBGenerator {
       contraAtom = contraAtom.negate()
       var atom = Atom(nodeID.toString())
       nodeID += 1
-      var ranks = DistributionOption.getStateCount(cfg, rankNo)
+      ranks = DistributionOption.getStateCount(cfg, rankNo)
       if (cfg.statementOption.equals(StatementOption.Defeasible))
         ranks = ranks / 2
       for (rankIndex <- 0 to ranks - 1) {
@@ -54,7 +66,7 @@ object KBGenerator {
           dkb = dkb.incl(DefeasibleImplication(atom, current))
         dkb = dkb.incl(DefeasibleImplication(atom, contraAtom))
         verbosePrint(
-          s"Added statement ${rankIndex + 1}/${ranks} to rank ${rankNo + 1}"
+          s"Added statement ${rankIndex + 1}/${ranks} to rank ${rankNo}"
         )
         if (rankIndex != ranks - 1) {
           atom = Atom(nodeID.toString())
