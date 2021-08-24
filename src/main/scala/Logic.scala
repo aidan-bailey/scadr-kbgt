@@ -15,15 +15,15 @@ object BinOp extends Operation {
       Or -> "| ",
       Implies -> ">",
       Iff -> "="
-     )
-    /*
+    )
+  /*
     Map(
       And -> "\\land ",
       Or -> "\\vee ",
       Implies -> "\\rightarrow ",
       Iff -> "\\leftrightarrow "
     )
-     */
+   */
   //Map(And -> "∧", Or -> "∨", Implies -> "=>", Iff -> "↔")
   //Map(AND -> "∧", OR -> "∨", IMPLIES -> "→", IFF -> "↔")
 
@@ -47,8 +47,8 @@ object UnOp extends Operation {
   val symbolMap: Map[UnOp.Value, String] =
     //Map(Not -> "¬")
     Map(Not -> "!")
-    //Map(Not -> "\\neg ")
-    //Map(Not -> "~")
+  //Map(Not -> "\\neg ")
+  //Map(Not -> "~")
 
   /** Maps to function. */
   val functionMap: Map[UnOp.Value, Boolean => Boolean] = Map(
@@ -203,7 +203,7 @@ case class UnCon(operator: UnOp.Value, operand: Formula) extends Formula {
 }
 
 /** Represents a propositional knowledge base. */
-class KnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
+class PropositionalKnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
 
   /** Returns the set of models. */
   def models(): Set[Map[String, Boolean]] = {
@@ -220,46 +220,52 @@ class KnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
   def entails(formula: Formula): Boolean = models().subsetOf(formula.models())
 
   /** Disjunct knowledge bases. */
-  def union(newKB: KnowledgeBase): KnowledgeBase = {
+  def union(newKB: PropositionalKnowledgeBase): PropositionalKnowledgeBase = {
     var newSeq: Seq[Formula] = kb
     for (f <- newKB.iterator) {
       if (!contains(f)) {
         newSeq = newSeq :+ f
       }
     }
-    return new KnowledgeBase(newSeq)
+    return new PropositionalKnowledgeBase(newSeq)
   }
 
   /** Conjunct knowledge bases. */
-  def intersection(newKB: KnowledgeBase): KnowledgeBase = {
+  def intersection(
+      newKB: PropositionalKnowledgeBase
+  ): PropositionalKnowledgeBase = {
     var newSeq: Seq[Formula] = kb
     for (f <- newKB.iterator) {
       if (contains(f)) {
         newSeq = newSeq :+ f
       }
     }
-    return new KnowledgeBase(newSeq)
+    return new PropositionalKnowledgeBase(newSeq)
   }
 
   /** Conjunct knowledge bases. */
-  def difference(newKB: KnowledgeBase): KnowledgeBase = {
+  def difference(
+      newKB: PropositionalKnowledgeBase
+  ): PropositionalKnowledgeBase = {
     var newSeq: Seq[Formula] = Seq()
     for (f <- kb) {
       if (!newKB.contains(f)) {
         newSeq = newSeq :+ f
       }
     }
-    return new KnowledgeBase(newSeq)
+    return new PropositionalKnowledgeBase(newSeq)
   }
 
   // Set Overrides
   override def iterator: Iterator[Formula] = kb.iterator
   override def contains(formula: Formula): Boolean = kb.contains(formula)
-  override def incl(formula: Formula): KnowledgeBase =
-    if (contains(formula)) this else new KnowledgeBase(kb :+ formula)
-  override def excl(formula: Formula): KnowledgeBase = new KnowledgeBase(
-    kb.filterNot(_ == formula)
-  )
+  override def incl(formula: Formula): PropositionalKnowledgeBase =
+    if (contains(formula)) this
+    else new PropositionalKnowledgeBase(kb :+ formula)
+  override def excl(formula: Formula): PropositionalKnowledgeBase =
+    new PropositionalKnowledgeBase(
+      kb.filterNot(_ == formula)
+    )
 
 }
 
@@ -273,8 +279,8 @@ case class DefeasibleImplication(p: Formula, q: Formula) {
 class DefeasibleKnowledgeBase(kb: Seq[DefeasibleImplication])
     extends Set[DefeasibleImplication] {
 
-  def materialize(): KnowledgeBase =
-    new KnowledgeBase(for (f <- kb) yield f.materialize())
+  def materialize(): PropositionalKnowledgeBase =
+    new PropositionalKnowledgeBase(for (f <- kb) yield f.materialize())
 
   // Set Overrides
   override def iterator: Iterator[DefeasibleImplication] = kb.iterator
