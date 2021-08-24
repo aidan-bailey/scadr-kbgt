@@ -1,25 +1,9 @@
 package skbgen.kbgenerator
 
 import skbgen.logic._
+import skbgen.config._
 import java.io._
 import scala.util.Random
-
-case class Config(
-    rankCount: Int = -1,
-    maxStates: Int = -1,
-    filename: String = "",
-    verbose: Boolean = false,
-    statementOption: StatementOption.Value = StatementOption.MaxClassical,
-    distributionOption: DistributionOption.Value = DistributionOption.Linear
-)
-
-object DistributionOption extends Enumeration {
-  val Linear, Exponential, Normal, InvertedNormal, Random = Value
-}
-
-object StatementOption extends Enumeration {
-  val Defeasible, Mixed, MaxClassical = Value
-}
 
 object KBGenerator {
   def outputfile(
@@ -39,8 +23,6 @@ object KBGenerator {
       cfg: Config
   ): (DefeasibleKnowledgeBase, KnowledgeBase) = {
     def verbosePrint(message: String) = if (cfg.verbose) println(message)
-    val stateCount = cfg.maxStates * cfg.rankCount
-    var random = new Random()
     var nodeID: BigInt = 0
     var dkb = new DefeasibleKnowledgeBase(List())
     var ckb = new KnowledgeBase(List())
@@ -52,54 +34,12 @@ object KBGenerator {
     verbosePrint(s"Added rank 1/${cfg.rankCount}")
     var current = rootAtom
     var prevRanks = 0
+    val stateCount = cfg.meanStates * cfg.rankCount
     for (rankNo <- 1 to cfg.rankCount - 1) {
       contraAtom = contraAtom.negate()
-      val stateCount = cfg.maxStates * cfg.rankCount
       var atom = Atom(nodeID.toString())
       nodeID += 1
-      var ranks = cfg.distributionOption match {
-        case DistributionOption.Linear => cfg.maxStates
-        case DistributionOption.Exponential =>
-          math
-            .ceil(
-              cfg.maxStates * math
-                .pow(rankNo.toDouble / cfg.rankCount.toDouble, 2)
-            )
-            .toInt
-        case DistributionOption.Normal =>
-          math
-            .max(
-              stateCount * math.pow(
-                math.E,
-                -math.pow(rankNo - (cfg.rankCount.toDouble / 2), 2) / (2 * math
-                  .pow((cfg.rankCount.toDouble / 2) / 4, 2))
-              ) / (((cfg.rankCount.toDouble / 2) / 4) * math.sqrt(2 * math.Pi)),
-              1
-            )
-            .toInt
-        case DistributionOption.InvertedNormal =>
-          math
-            .max(
-              stateCount * (math.pow(
-                math.E,
-                -math.pow(
-                  (cfg.rankCount.toDouble / 2).toInt - (cfg.rankCount.toDouble / 2),
-                  2
-                ) / (2 * math
-                  .pow((cfg.rankCount.toDouble / 2) / 4, 2))
-              ) / (((cfg.rankCount.toDouble / 2) / 4) * math
-                .sqrt(2 * math.Pi)) - math.pow(
-                math.E,
-                -math.pow(rankNo - (cfg.rankCount.toDouble / 2), 2) / (2 * math
-                  .pow((cfg.rankCount.toDouble / 2) / 4, 2))
-              ) / (((cfg.rankCount.toDouble / 2) / 4) * math
-                .sqrt(2 * math.Pi))),
-              1
-            )
-            .toInt
-        case DistributionOption.Random =>
-          random.nextInt(cfg.maxStates - 1) + 1
-      }
+      var ranks = DistributionOption.getStateCount(cfg, rankNo)
       if (cfg.statementOption.equals(StatementOption.Defeasible))
         ranks = ranks / 2
       for (rankIndex <- 0 to ranks - 1) {
@@ -108,7 +48,7 @@ object KBGenerator {
             StatementOption.MaxClassical
           ) || (cfg.statementOption
             .equals(StatementOption.Mixed)
-            && random.nextBoolean())
+            && DistributionOption.random.nextBoolean())
         )
           ckb = ckb.incl(BinCon(BinOp.Implies, atom, current))
         else

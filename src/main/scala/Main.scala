@@ -1,5 +1,6 @@
 import skbgen.logic._
 import skbgen.kbgenerator._
+import skbgen.config._
 import scopt._
 
 object Main extends App {
@@ -16,13 +17,13 @@ object Main extends App {
         .text("number of ranks"),
       opt[Int]('s', "states")
         .required()
-        .action((x, c) => c.copy(maxStates = x))
-        .text("maximum number of states per rank"),
+        .action((x, c) => c.copy(meanStates = x))
+        .text("mean states per rank"),
       opt[String]('t', "type")
         .valueName("<opt>")
         .action((x, c) =>
           x match {
-            case "classical" =>
+            case "max-classical" =>
               c.copy(statementOption = StatementOption.MaxClassical)
             case "defeasible" =>
               c.copy(statementOption = StatementOption.Defeasible)
@@ -30,7 +31,7 @@ object Main extends App {
               c.copy(statementOption = StatementOption.Mixed)
           }
         )
-        .text("statement types {classical, defeasible, mixed}"),
+        .text("statement type {max-classical, defeasible, mixed}"),
       opt[String]('d', "distribution")
         .valueName("<opt>")
         .action((x, c) =>
