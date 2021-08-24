@@ -51,6 +51,23 @@ object Main extends App {
         .text(
           "distribution option {linear, exponential, normal, inverted-normal, random}"
         ),
+      opt[String]('n', "notation")
+        .valueName("<opt>")
+        .action((x, c) =>
+          x match {
+            case "tweety" =>
+              c.copy(notationOption = NotationOption.Tweety)
+            case "formal" =>
+              c.copy(notationOption = NotationOption.Formal)
+            case "simple" =>
+              c.copy(notationOption = NotationOption.Simple)
+            case "latex" =>
+              c.copy(notationOption = NotationOption.Latex)
+          }
+        )
+        .text(
+          "notation option {tweety, formal, simple, latex}"
+        ),
       opt[String]('o', "out")
         .valueName("<filename>")
         .action((x, c) => c.copy(filename = x))
@@ -64,6 +81,8 @@ object Main extends App {
 
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
+      BinOp.notation = config.notationOption
+      UnOp.notation = config.notationOption
       println("Generating knowledge base...")
       var (dkb, ckb) = KBGenerator.generate(config)
       println("Knowledge base generation complete.")

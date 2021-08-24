@@ -8,8 +8,13 @@ case class Config(
     filename: String = "",
     verbose: Boolean = false,
     statementOption: StatementOption.Value = StatementOption.MaxClassical,
-    distributionOption: DistributionOption.Value = DistributionOption.Linear
+    distributionOption: DistributionOption.Value = DistributionOption.Linear,
+    notationOption: NotationOption.Value = NotationOption.Tweety
 )
+
+object NotationOption extends Enumeration {
+  val Tweety, Latex, Simple, Formal = Value
+}
 
 object DistributionOption extends Enumeration {
   val Linear, Exponential, Normal, InvertedNormal, Random = Value

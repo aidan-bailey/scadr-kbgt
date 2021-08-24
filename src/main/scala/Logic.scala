@@ -1,31 +1,49 @@
 package skbgen.logic
 
+import skbgen.config._
+
 sealed trait Operation extends Enumeration
 
 /** Binary operator enums and maps. */
 object BinOp extends Operation {
 
+  var notation: NotationOption.Value = NotationOption.Tweety
+
   /** Binary operator enums. */
   val And, Or, Implies, Iff = Value
 
   /** Maps to symbolic representation. */
-  val symbolMap: Map[BinOp.Value, String] =
-    Map(
-      And -> "& ",
-      Or -> "| ",
-      Implies -> ">",
-      Iff -> "="
-    )
-  /*
-    Map(
-      And -> "\\land ",
-      Or -> "\\vee ",
-      Implies -> "\\rightarrow ",
-      Iff -> "\\leftrightarrow "
-    )
-   */
-  //Map(And -> "∧", Or -> "∨", Implies -> "=>", Iff -> "↔")
-  //Map(AND -> "∧", OR -> "∨", IMPLIES -> "→", IFF -> "↔")
+  def getNotation(op: BinOp.Value): String =
+    notation match {
+      case NotationOption.Tweety =>
+        op match {
+          case And     => "^^"
+          case Or      => "||"
+          case Implies => "=>"
+          case Iff     => "<=>"
+        }
+      case NotationOption.Formal =>
+        op match {
+          case And     => "∧"
+          case Or      => "∨"
+          case Implies => "→"
+          case Iff     => "↔"
+        }
+      case NotationOption.Simple =>
+        op match {
+          case And     => "&"
+          case Or      => "|"
+          case Implies => ">"
+          case Iff     => "="
+        }
+      case NotationOption.Latex =>
+        op match {
+          case And     => "\\land "
+          case Or      => "\\vee  "
+          case Implies => "\\rightarrow "
+          case Iff     => "\\leftrightarrow "
+        }
+    }
 
   /** Maps to function. */
   val functionMap: Map[BinOp.Value, (Boolean, Boolean) => Boolean] =
@@ -40,15 +58,31 @@ object BinOp extends Operation {
 /** Unary operator enums and maps. */
 object UnOp extends Operation {
 
+  var notation: NotationOption.Value = NotationOption.Tweety
+
   /** Unary operator enums. */
   val Not = Value
 
   /** Maps to symbolic representation. */
-  val symbolMap: Map[UnOp.Value, String] =
-    //Map(Not -> "¬")
-    Map(Not -> "!")
-  //Map(Not -> "\\neg ")
-  //Map(Not -> "~")
+  def getNotation(op: UnOp.Value): String =
+    notation match {
+      case NotationOption.Tweety =>
+        op match {
+          case Not => "!"
+        }
+      case NotationOption.Formal =>
+        op match {
+          case Not => "¬"
+        }
+      case NotationOption.Simple =>
+        op match {
+          case Not => "~"
+        }
+      case NotationOption.Latex =>
+        op match {
+          case Not => "\\neg "
+        }
+    }
 
   /** Maps to function. */
   val functionMap: Map[UnOp.Value, Boolean => Boolean] = Map(
@@ -169,7 +203,7 @@ case class BinCon(
 
   /** toString override. */
   override def toString(): String = {
-    return "(" + leftOperand.toString() + BinOp.symbolMap(
+    return "(" + leftOperand.toString() + BinOp.getNotation(
       operator
     ) + rightOperand.toString() + ")"
   }
@@ -191,7 +225,7 @@ case class UnCon(operator: UnOp.Value, operand: Formula) extends Formula {
 
   /** toString override. */
   override def toString(): String = {
-    return "(" + UnOp.symbolMap(operator) + operand
+    return "(" + UnOp.getNotation(operator) + operand
       .toString() + ")";
   }
 
