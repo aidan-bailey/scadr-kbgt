@@ -75,7 +75,8 @@ object Main extends App {
       opt[Unit]("verbose")
         .action((_, c) => c.copy(verbose = true))
         .text("enable trace statements"),
-      help("help").text("prints this usage text")
+      help("help").text("prints this usage text"),
+      note("\n*First elements in option sets are defaults")
     )
   }
 
