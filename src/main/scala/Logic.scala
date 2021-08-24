@@ -203,7 +203,7 @@ case class UnCon(operator: UnOp.Value, operand: Formula) extends Formula {
 }
 
 /** Represents a propositional knowledge base. */
-class PropositionalKnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
+class ClassicalKnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
 
   /** Returns the set of models. */
   def models(): Set[Map[String, Boolean]] = {
@@ -220,50 +220,50 @@ class PropositionalKnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
   def entails(formula: Formula): Boolean = models().subsetOf(formula.models())
 
   /** Disjunct knowledge bases. */
-  def union(newKB: PropositionalKnowledgeBase): PropositionalKnowledgeBase = {
+  def union(newKB: ClassicalKnowledgeBase): ClassicalKnowledgeBase = {
     var newSeq: Seq[Formula] = kb
     for (f <- newKB.iterator) {
       if (!contains(f)) {
         newSeq = newSeq :+ f
       }
     }
-    return new PropositionalKnowledgeBase(newSeq)
+    return new ClassicalKnowledgeBase(newSeq)
   }
 
   /** Conjunct knowledge bases. */
   def intersection(
-      newKB: PropositionalKnowledgeBase
-  ): PropositionalKnowledgeBase = {
+      newKB: ClassicalKnowledgeBase
+  ): ClassicalKnowledgeBase = {
     var newSeq: Seq[Formula] = kb
     for (f <- newKB.iterator) {
       if (contains(f)) {
         newSeq = newSeq :+ f
       }
     }
-    return new PropositionalKnowledgeBase(newSeq)
+    return new ClassicalKnowledgeBase(newSeq)
   }
 
   /** Conjunct knowledge bases. */
   def difference(
-      newKB: PropositionalKnowledgeBase
-  ): PropositionalKnowledgeBase = {
+      newKB: ClassicalKnowledgeBase
+  ): ClassicalKnowledgeBase = {
     var newSeq: Seq[Formula] = Seq()
     for (f <- kb) {
       if (!newKB.contains(f)) {
         newSeq = newSeq :+ f
       }
     }
-    return new PropositionalKnowledgeBase(newSeq)
+    return new ClassicalKnowledgeBase(newSeq)
   }
 
   // Set Overrides
   override def iterator: Iterator[Formula] = kb.iterator
   override def contains(formula: Formula): Boolean = kb.contains(formula)
-  override def incl(formula: Formula): PropositionalKnowledgeBase =
+  override def incl(formula: Formula): ClassicalKnowledgeBase =
     if (contains(formula)) this
-    else new PropositionalKnowledgeBase(kb :+ formula)
-  override def excl(formula: Formula): PropositionalKnowledgeBase =
-    new PropositionalKnowledgeBase(
+    else new ClassicalKnowledgeBase(kb :+ formula)
+  override def excl(formula: Formula): ClassicalKnowledgeBase =
+    new ClassicalKnowledgeBase(
       kb.filterNot(_ == formula)
     )
 
@@ -279,8 +279,8 @@ case class DefeasibleImplication(p: Formula, q: Formula) {
 class DefeasibleKnowledgeBase(kb: Seq[DefeasibleImplication])
     extends Set[DefeasibleImplication] {
 
-  def materialize(): PropositionalKnowledgeBase =
-    new PropositionalKnowledgeBase(for (f <- kb) yield f.materialize())
+  def materialize(): ClassicalKnowledgeBase =
+    new ClassicalKnowledgeBase(for (f <- kb) yield f.materialize())
 
   // Set Overrides
   override def iterator: Iterator[DefeasibleImplication] = kb.iterator

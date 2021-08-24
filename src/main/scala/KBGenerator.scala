@@ -9,7 +9,7 @@ object KBGenerator {
   def outputfile(
       filename: String,
       dkb: DefeasibleKnowledgeBase,
-      ckb: PropositionalKnowledgeBase
+      ckb: ClassicalKnowledgeBase
   ): Unit = {
     val pw = new PrintWriter(new File(filename))
     for (p <- ckb)
@@ -21,11 +21,11 @@ object KBGenerator {
 
   def generate(
       cfg: Config
-  ): (DefeasibleKnowledgeBase, PropositionalKnowledgeBase) = {
+  ): (DefeasibleKnowledgeBase, ClassicalKnowledgeBase) = {
     def verbosePrint(message: String) = if (cfg.verbose) println(message)
     var nodeID: BigInt = 0
     var dkb = new DefeasibleKnowledgeBase(List())
-    var ckb = new PropositionalKnowledgeBase(List())
+    var ckb = new ClassicalKnowledgeBase(List())
     var contraAtom: Formula = Atom(nodeID.toString())
     nodeID += 1
     var rootAtom = Atom(nodeID.toString())
