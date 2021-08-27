@@ -244,14 +244,25 @@ class ClassicalKnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
     var iter = iterator
     if (iter.isEmpty)
       return Set()
-    var modelSet: Set[Map[String, Boolean]] = iter.next().models();
+    var formula = iter.next()
     while (iter.hasNext)
-      modelSet = modelSet.filter(iter.next().models())
+      formula = BinCon(BinOp.And, formula, iter.next())
+    var modelSet = formula.models()
     return modelSet
   }
 
   /** Checks entailment. */
-  def entails(formula: Formula): Boolean = models().subsetOf(formula.models())
+  def entails(formula: Formula): Boolean = {
+    for (model <- models()) {
+      for (valuation <- formula.models()) {
+        for (assignment <- valuation.keySet) {
+          if (valuation(assignment) != model(assignment))
+            return false
+        }
+      }
+    }
+    return true
+  }
 
   /** Disjunct knowledge bases. */
   def union(newKB: ClassicalKnowledgeBase): ClassicalKnowledgeBase = {
