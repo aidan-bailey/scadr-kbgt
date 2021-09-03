@@ -1,7 +1,11 @@
 import skbgen.logic._
 import skbgen.kbgenerator._
 import skbgen.config._
+import skbgen.implicationgenerator._
+import skbgen.defeasiblelogic._
 import scopt._
+import skbgen.defeasiblelogic.baserank.BaseRank
+import skbgen.formulagenerator.FormulaGenerator
 
 object Main extends App {
 
@@ -17,8 +21,8 @@ object Main extends App {
         .text("number of ranks"),
       opt[Int]('s', "states")
         .required()
-        .action((x, c) => c.copy(meanStates = x))
-        .text("mean states per rank"),
+        .action((x, c) => c.copy(stateCount = x))
+        .text("number of states"),
       opt[String]('t', "type")
         .valueName("<opt>")
         .action((x, c) =>
@@ -36,20 +40,16 @@ object Main extends App {
         .valueName("<opt>")
         .action((x, c) =>
           x match {
-            case "linear" =>
-              c.copy(distributionOption = DistributionOption.Linear)
+            case "uniform" =>
+              c.copy(distributionOption = DistributionOption.Uniform)
             case "exponential" =>
               c.copy(distributionOption = DistributionOption.Exponential)
             case "normal" =>
               c.copy(distributionOption = DistributionOption.Normal)
-            case "inverted-normal" =>
-              c.copy(distributionOption = DistributionOption.InvertedNormal)
-            case "random" =>
-              c.copy(distributionOption = DistributionOption.Random)
           }
         )
         .text(
-          "distribution option {linear, exponential, normal, inverted-normal, random}"
+          "distribution option {uniform, exponential, normal}"
         ),
       opt[String]('n', "notation")
         .valueName("<opt>")
@@ -68,6 +68,9 @@ object Main extends App {
         .text(
           "notation option {tweety, formal, simple, latex}"
         ),
+      opt[Unit]("invert")
+        .action((_, c) => c.copy(inverted = true))
+        .text("invert distribution"),
       opt[String]('o', "out")
         .valueName("<filename>")
         .action((x, c) => c.copy(filename = x))
@@ -85,7 +88,7 @@ object Main extends App {
       BinOp.notation = config.notationOption
       UnOp.notation = config.notationOption
       println("Generating knowledge base...")
-      var (dkb, ckb) = KBGenerator.generate(config)
+      var (dkb, ckb) = KBGenerator.generateStructural(config)
       println("Knowledge base generation complete.")
       println("Writing to file...")
       if (config.filename.equals("")) {

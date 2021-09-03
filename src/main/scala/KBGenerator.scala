@@ -6,6 +6,7 @@ import java.io._
 import scala.util.Random
 
 object KBGenerator {
+
   def outputfile(
       filename: String,
       dkb: DefeasibleKnowledgeBase,
@@ -22,38 +23,48 @@ object KBGenerator {
   def generate(
       cfg: Config
   ): (DefeasibleKnowledgeBase, ClassicalKnowledgeBase) = {
+
+    return (
+      new DefeasibleKnowledgeBase(List()),
+      new ClassicalKnowledgeBase(List())
+    )
+  }
+
+  def generateStructural(
+      cfg: Config
+  ): (DefeasibleKnowledgeBase, ClassicalKnowledgeBase) = {
     def verbosePrint(message: String) = if (cfg.verbose) println(message)
     var nodeID: BigInt = 0
     var dkb = new DefeasibleKnowledgeBase(List())
     var ckb = new ClassicalKnowledgeBase(List())
     var contraAtom: Formula = Atom(nodeID.toString())
     nodeID += 1
-    var ranks = DistributionOption.getStateCount(cfg, 1)
-    for (rankIndex <- 0 to ranks - 2) {
+    var states = DistributionOption.getStateCount(cfg, 1)
+    for (rankIndex <- 0 to states - 2) {
       var rootAtom = Atom(nodeID.toString())
       nodeID += 1
       dkb = dkb.incl(DefeasibleImplication(rootAtom, contraAtom))
       verbosePrint(
-        s"Added statement ${rankIndex + 1}/${ranks} to rank 0"
+        s"Added statement ${rankIndex + 1}/${states} to rank 0"
       )
     }
     var rootAtom = Atom(nodeID.toString())
     nodeID += 1
     dkb = dkb.incl(DefeasibleImplication(rootAtom, contraAtom))
     verbosePrint(
-      s"Added statement ${ranks}/${ranks} to rank 0"
+      s"Added statement ${states}/${states} to rank 0"
     )
     verbosePrint(s"Added rank 1/${cfg.rankCount}")
     var current = rootAtom
-    val stateCount = cfg.meanStates * cfg.rankCount
     for (rankNo <- 1 to cfg.rankCount - 1) {
       contraAtom = contraAtom.negate()
       var atom = Atom(nodeID.toString())
       nodeID += 1
-      ranks = DistributionOption.getStateCount(cfg, rankNo)
-      if (cfg.statementOption.equals(StatementOption.Defeasible))
-        ranks = ranks / 2
-      for (rankIndex <- 0 to ranks - 1) {
+      states = math.max(
+        DistributionOption.getStateCount(cfg, rankNo + 1),
+        1
+      )
+      for (rankIndex <- 0 to states - 1) {
         if (
           cfg.statementOption.equals(
             StatementOption.MaxClassical
@@ -66,9 +77,9 @@ object KBGenerator {
           dkb = dkb.incl(DefeasibleImplication(atom, current))
         dkb = dkb.incl(DefeasibleImplication(atom, contraAtom))
         verbosePrint(
-          s"Added statement ${rankIndex + 1}/${ranks} to rank ${rankNo}"
+          s"Added statement ${rankIndex + 1}/${states} to rank ${rankNo}"
         )
-        if (rankIndex != ranks - 1) {
+        if (rankIndex != states - 1) {
           atom = Atom(nodeID.toString())
           nodeID += 1
         }
