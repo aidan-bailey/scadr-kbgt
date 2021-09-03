@@ -33,7 +33,7 @@ case class Config(
     stateCount: Int = -1,
     filename: String = "",
     verbose: Boolean = false,
-    inverted: Boolean = true,
+    inverted: Boolean = false,
     statementOption: StatementOption.Value = StatementOption.MaxClassical,
     distributionOption: DistributionOption.Value = DistributionOption.Uniform,
     notationOption: NotationOption.Value = NotationOption.Tweety
