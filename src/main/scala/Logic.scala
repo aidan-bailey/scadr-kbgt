@@ -1,6 +1,7 @@
 package skbgen.logic
 
 import skbgen.config._
+import scala.collection.mutable.ListBuffer
 
 sealed trait Operation extends Enumeration
 
@@ -239,6 +240,14 @@ case class UnCon(operator: UnOp.Value, operand: Formula) extends Formula {
 /** Represents a propositional knowledge base. */
 class ClassicalKnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
 
+  def atoms(): Set[String] = {
+    var result = new ListBuffer[String]()
+    for (p <- kb) {
+      result ++= p.atoms()
+    }
+    return result.toSet
+  }
+
   /** Returns the set of models. */
   def models(): Set[Map[String, Boolean]] = {
     var iter = iterator
@@ -253,13 +262,29 @@ class ClassicalKnowledgeBase(kb: Seq[Formula]) extends Set[Formula] {
 
   /** Checks entailment. */
   def entails(formula: Formula): Boolean = {
-    for (model <- models()) {
-      for (valuation <- formula.models()) {
+    def subsumes(
+        models: Set[Map[String, Boolean]],
+        valuation: Map[String, Boolean]
+    ): Boolean = {
+      for (model <- models) {
+        var bool = true
         for (assignment <- valuation.keySet) {
-          if (valuation(assignment) != model(assignment))
-            return false
+          if (
+            model.keySet.contains(assignment) && model(assignment) != valuation(
+              assignment
+            )
+          ) {
+            bool &= false
+          }
         }
+        if (bool)
+          return true
       }
+      return false
+    }
+    for (model <- models()) {
+      if (!subsumes(formula.models(), model))
+        return false
     }
     return true
   }
