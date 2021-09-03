@@ -18,8 +18,7 @@ object BaseRank {
       var prevMaterialization = currentMaterialization
       currentMaterialization = new ClassicalKnowledgeBase(List())
 
-      var temp = prevMaterialization
-      temp = temp.union(ckb)
+      var temp = prevMaterialization.union(ckb)
 
       for (f <- prevMaterialization) {
         f match {
