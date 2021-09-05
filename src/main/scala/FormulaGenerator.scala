@@ -2,7 +2,6 @@ package skbgen.formulagenerator
 import skbgen.logic._
 import scala.collection.mutable.Queue
 import scala.collection.mutable.ListBuffer
-import org.tweetyproject.logics._
 
 sealed abstract trait GenericFormula {
 
