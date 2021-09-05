@@ -33,7 +33,6 @@ case class Config(
     stateCount: Int = -1,
     filename: String = "",
     verbose: Boolean = false,
-    inverted: Boolean = false,
     statementOption: StatementOption.Value = StatementOption.MaxClassical,
     distributionOption: DistributionOption.Value = DistributionOption.Uniform,
     notationOption: NotationOption.Value = NotationOption.Tweety
@@ -44,37 +43,85 @@ object NotationOption extends Enumeration {
 }
 
 object DistributionOption extends Enumeration {
-  val Exponential, Normal, Uniform = Value
+  val Exponential, Normal, Uniform, InvertedNormal, InvertedExponential = Value
   val random = new Random()
   def getStateCount(cfg: Config, rankNo: Int): Int = {
-    cfg.distributionOption match {
-      case DistributionOption.Uniform => cfg.stateCount / cfg.rankCount
-      case DistributionOption.Exponential =>
-        Math
-          .max(
-            cfg.stateCount * (
-              1 - math.pow(
-                math.E,
-                -(5 / cfg.rankCount.toDouble) * rankNo.toDouble
+    math.max(
+      cfg.distributionOption match {
+        case DistributionOption.Uniform => cfg.stateCount / cfg.rankCount
+        case DistributionOption.Exponential =>
+          Math
+            .round(
+              cfg.stateCount * (
+                (1 - math.pow(
+                  math.E,
+                  -(5 / cfg.rankCount.toDouble) * (rankNo.toDouble)
+                ))
+                  -
+                    (1 - math.pow(
+                      math.E,
+                      -(5 / cfg.rankCount.toDouble) * (rankNo.toDouble - 1)
+                    ))
               )
-            ),
-            1
-          )
-          .toInt
-      case DistributionOption.Normal =>
-        math
-          .max(
-            cfg.stateCount * (((math.sqrt(math.Pi / 2) * Erf.erf(
-              -4 / 2 + (8 / 2) * rankNo.toDouble / cfg.rankCount.toDouble
-            ) + math.sqrt(math.Pi / 2)) / (math.sqrt(2) * math
-              .sqrt(math.Pi))) - ((math.sqrt(math.Pi / 2) * Erf.erf(
-              -4 / 2 + (8 / 2) * (rankNo.toDouble - 1) / cfg.rankCount.toDouble
-            ) + math.sqrt(math.Pi / 2)) / (math.sqrt(2) * math
-              .sqrt(math.Pi)))),
-            1
-          )
-          .toInt
-    }
+            )
+            .toInt
+        case DistributionOption.InvertedExponential =>
+          Math
+            .round(
+              cfg.stateCount * (
+                (1 - math.pow(
+                  math.E,
+                  -(5 / cfg.rankCount.toDouble) * (cfg.rankCount.doubleValue + 1 - rankNo.toDouble)
+                ))
+                  -
+                    (1 - math.pow(
+                      math.E,
+                      -(5 / cfg.rankCount.toDouble) * (cfg.rankCount.doubleValue + 1 - rankNo.toDouble - 1)
+                    ))
+              )
+            )
+            .toInt
+        case DistributionOption.Normal =>
+          math
+            .round(
+              cfg.stateCount * (((math.sqrt(math.Pi / 2) * Erf.erf(
+                -4 / 2 + (8 / 2) * rankNo.toDouble / cfg.rankCount.toDouble
+              ) + math.sqrt(math.Pi / 2)) / (math.sqrt(2) * math
+                .sqrt(math.Pi))) - ((math.sqrt(math.Pi / 2) * Erf.erf(
+                -4 / 2 + (8 / 2) * (rankNo.toDouble - 1) / cfg.rankCount.toDouble
+              ) + math.sqrt(math.Pi / 2)) / (math.sqrt(2) * math
+                .sqrt(math.Pi))))
+            )
+            .toInt
+        case DistributionOption.InvertedNormal =>
+          if (rankNo < math.round((cfg.rankCount + 1) / 2)) {
+            math
+              .round(
+                cfg.stateCount * (((math.sqrt(math.Pi / 2) * Erf.erf(
+                  -4 / 2 + (8 / 2) * ((cfg.rankCount + 1) / 2 + rankNo.toDouble) / cfg.rankCount.toDouble
+                ) + math.sqrt(math.Pi / 2)) / (math.sqrt(2) * math
+                  .sqrt(math.Pi))) - ((math.sqrt(math.Pi / 2) * Erf.erf(
+                  -4 / 2 + (8 / 2) * ((cfg.rankCount + 1) / 2 + rankNo.toDouble - 1) / cfg.rankCount.toDouble
+                ) + math.sqrt(math.Pi / 2)) / (math.sqrt(2) * math
+                  .sqrt(math.Pi))))
+              )
+              .toInt
+          } else {
+            math
+              .round(
+                cfg.stateCount * (((math.sqrt(math.Pi / 2) * Erf.erf(
+                  -4 / 2 + (8 / 2) * (rankNo.toDouble - (cfg.rankCount + 1) / 2) / cfg.rankCount.toDouble
+                ) + math.sqrt(math.Pi / 2)) / (math.sqrt(2) * math
+                  .sqrt(math.Pi))) - ((math.sqrt(math.Pi / 2) * Erf.erf(
+                  -4 / 2 + (8 / 2) * (rankNo.toDouble - (cfg.rankCount + 1) / 2 - 1) / cfg.rankCount.toDouble
+                ) + math.sqrt(math.Pi / 2)) / (math.sqrt(2) * math
+                  .sqrt(math.Pi))))
+              )
+              .toInt
+          }
+      },
+      1
+    )
   }
   def getStateQueue(cfg: Config): List[Int] = {
     var result = ListBuffer()

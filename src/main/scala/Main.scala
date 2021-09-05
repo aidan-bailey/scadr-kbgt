@@ -18,11 +18,11 @@ object Main extends App {
       opt[Int]('r', "ranks")
         .required()
         .action((x, c) => c.copy(rankCount = x))
-        .text("number of ranks"),
+        .text("total number of ranks"),
       opt[Int]('s', "states")
         .required()
         .action((x, c) => c.copy(stateCount = x))
-        .text("number of states"),
+        .text("total number of states"),
       opt[String]('t', "type")
         .valueName("<opt>")
         .action((x, c) =>
@@ -44,12 +44,18 @@ object Main extends App {
               c.copy(distributionOption = DistributionOption.Uniform)
             case "exponential" =>
               c.copy(distributionOption = DistributionOption.Exponential)
+            case "inverted-exponential" =>
+              c.copy(distributionOption =
+                DistributionOption.InvertedExponential
+              )
             case "normal" =>
               c.copy(distributionOption = DistributionOption.Normal)
+            case "inverted-normal" =>
+              c.copy(distributionOption = DistributionOption.InvertedNormal)
           }
         )
         .text(
-          "distribution option {uniform, exponential, normal}"
+          "distribution option {uniform, exponential, inverted-exponential, inverted-normal}"
         ),
       opt[String]('n', "notation")
         .valueName("<opt>")
@@ -68,9 +74,6 @@ object Main extends App {
         .text(
           "notation option {tweety, formal, simple, latex}"
         ),
-      opt[Unit]("invert")
-        .action((_, c) => c.copy(inverted = true))
-        .text("invert distribution"),
       opt[String]('o', "out")
         .valueName("<filename>")
         .action((x, c) => c.copy(filename = x))
