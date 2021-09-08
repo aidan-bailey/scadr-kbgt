@@ -1,14 +1,15 @@
 import skbgen.logic._
-import skbgen.kbgenerator._
-import skbgen.config._
-import skbgen.implicationgenerator._
-import skbgen.defeasiblelogic._
+import skbgen.generation._
+import skbgen._
 import scopt._
-import skbgen.defeasiblelogic.baserank.BaseRank
-import skbgen.formulagenerator.FormulaGenerator
+import org.tweetyproject.logics.pl.parser.PlParser
+import org.tweetyproject.logics.pl.syntax._
+import org.tweetyproject.commons.ParserException
+import java.io.File
+import java.io.PrintWriter
+import java.io.FileNotFoundException
 
 object Main extends App {
-
   val builder = OParser.builder[Config]
   val parser1 = {
     import builder._
@@ -16,26 +17,22 @@ object Main extends App {
       programName("kbgen"),
       head("kbgen", "1.0"),
       opt[Int]('r', "ranks")
-        .required()
         .action((x, c) => c.copy(rankCount = x))
         .text("total number of ranks"),
       opt[Int]('s', "states")
-        .required()
         .action((x, c) => c.copy(stateCount = x))
         .text("total number of states"),
       opt[String]('t', "type")
         .valueName("<opt>")
         .action((x, c) =>
           x match {
-            case "max-classical" =>
-              c.copy(statementOption = StatementOption.MaxClassical)
             case "defeasible" =>
               c.copy(statementOption = StatementOption.Defeasible)
             case "mixed" =>
               c.copy(statementOption = StatementOption.Mixed)
           }
         )
-        .text("statement type {max-classical, defeasible, mixed}"),
+        .text("statement type {defeasible, mixed}"),
       opt[String]('d', "distribution")
         .valueName("<opt>")
         .action((x, c) =>
@@ -55,7 +52,7 @@ object Main extends App {
           }
         )
         .text(
-          "distribution option {uniform, exponential, inverted-exponential, inverted-normal}"
+          "distribution option {uniform, exponential, normal, inverted-exponential, inverted-normal}"
         ),
       opt[String]('n', "notation")
         .valueName("<opt>")
@@ -65,14 +62,12 @@ object Main extends App {
               c.copy(notationOption = NotationOption.Tweety)
             case "formal" =>
               c.copy(notationOption = NotationOption.Formal)
-            case "simple" =>
-              c.copy(notationOption = NotationOption.Simple)
             case "latex" =>
               c.copy(notationOption = NotationOption.Latex)
           }
         )
         .text(
-          "notation option {tweety, formal, simple, latex}"
+          "notation option {tweety, formal, latex}"
         ),
       opt[String]('o', "out")
         .valueName("<filename>")
@@ -81,6 +76,9 @@ object Main extends App {
       opt[Unit]("verbose")
         .action((_, c) => c.copy(verbose = true))
         .text("enable trace statements"),
+      opt[Unit]("interactive")
+        .action((_, c) => c.copy(interactive = true))
+        .text("run in interactive repl mode"),
       help("help").text("prints this usage text"),
       note("\n*First elements in option sets are defaults")
     )
@@ -88,20 +86,35 @@ object Main extends App {
 
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
-      BinOp.notation = config.notationOption
-      UnOp.notation = config.notationOption
-      println("Generating knowledge base...")
-      var (dkb, ckb) = KBGenerator.generateStructural(config)
-      println("Knowledge base generation complete.")
-      println("Writing to file...")
-      if (config.filename.equals("")) {
-        KBGenerator.outputfile("out.txt", dkb, ckb)
-        println(s"Knowledge base written to out.txt.")
-      } else {
-        KBGenerator.outputfile(config.filename, dkb, ckb)
-        println(s"Knowledge base written to ${config.filename}.")
+      Notation.choice = config.notationOption
+      var kb = new MixedKnowledgeBase
+      if (config.rankCount > 0 && config.stateCount > 0) {
+        println("Generating knowledge base...")
+        var (dkb, ckb) = config.statementOption match {
+          case StatementOption.Defeasible =>
+            KBGenerator.generateDefeasible(config)
+          case StatementOption.Mixed =>
+            KBGenerator.generateStructural(config)
+        }
+        kb = new MixedKnowledgeBase(ckb, dkb)
+        println("Knowledge base generation complete.")
+        if (config.filename.equals("")) {
+          if (!config.interactive) {
+            println("Classical :", ckb.toString())
+            println("Defeasible :", dkb.toString())
+          }
+        } else {
+          println("Writing to file...")
+          KBGenerator.outputfile(config.filename, dkb, ckb)
+          println(s"Knowledge base written to ${config.filename}.")
+        }
+      }
+      if (config.interactive) {
+        println("Entering interactive mode.")
+        Interactive.knowledgebaseREPL(
+          kb
+        )
       }
     case _ =>
-    // arguments are bad, error message will have been displayed
   }
 }

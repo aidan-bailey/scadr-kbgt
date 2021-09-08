@@ -1,11 +1,9 @@
-package skbgen.config
+package skbgen
 
 import scala.util.Random
 import scala.collection.mutable.ListBuffer
 
-//Calculates the error function using Horner’s method.
 trait Erf {
-  // constants
   val a1: Double = 0.254829592;
   val a2: Double = -0.284496736;
   val a3: Double = 1.421413741;
@@ -33,13 +31,14 @@ case class Config(
     stateCount: Int = -1,
     filename: String = "",
     verbose: Boolean = false,
-    statementOption: StatementOption.Value = StatementOption.MaxClassical,
+    interactive: Boolean = false,
+    statementOption: StatementOption.Value = StatementOption.Defeasible,
     distributionOption: DistributionOption.Value = DistributionOption.Uniform,
-    notationOption: NotationOption.Value = NotationOption.Tweety
+    notationOption: NotationOption.Value = NotationOption.Formal
 )
 
 object NotationOption extends Enumeration {
-  val Tweety, Latex, Simple, Formal = Value
+  val Tweety, Latex, Formal = Value
 }
 
 object DistributionOption extends Enumeration {
@@ -123,15 +122,8 @@ object DistributionOption extends Enumeration {
       1
     )
   }
-  def getStateQueue(cfg: Config): List[Int] = {
-    var result = ListBuffer()
-
-    var ls = result.toList
-    ls.reverse
-    return ls
-  }
 }
 
 object StatementOption extends Enumeration {
-  val Defeasible, Mixed, MaxClassical = Value
+  val Defeasible, Mixed = Value
 }

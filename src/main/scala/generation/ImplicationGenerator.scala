@@ -1,9 +1,8 @@
-package skbgen.implicationgenerator
+package skbgen.generation
 
 import scala.collection.mutable.Queue
 import skbgen.logic._
 import scala.collection.mutable.ListBuffer
-import skbgen.formulagenerator._
 
 object ImplicationGenerator {
 
@@ -68,7 +67,10 @@ object ImplicationGenerator {
       val anteGenerics = generateGenerics(anteCount)
       for (anteAtoms <- atoms.toList.combinations(anteCount)) {
         for (
-          antecedent <- FormulaGenerator.generateAll(anteGenerics, anteAtoms)
+          antecedent <- FormulaGenerator.generateAll(
+            anteGenerics,
+            anteAtoms.map(p => p.toString())
+          )
         ) {
           //for (descCount <- 1 to atoms.size) {
           for (descCount <- 1 to 1) {
@@ -77,11 +79,11 @@ object ImplicationGenerator {
               for (
                 descendent <- FormulaGenerator.generateAll(
                   descGenerics,
-                  descAtoms
+                  descAtoms.map(p => p.toString())
                 )
               ) {
                 val formula = BinCon(BinOp.Implies, antecedent, descendent)
-                val temp = mkb.incl(formula)
+                val temp: ClassicalKnowledgeBase = mkb + formula
                 if (
                   formula.models.nonEmpty && temp.entails(antecedent.negate())
                 )

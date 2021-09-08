@@ -1,4 +1,4 @@
-package skbgen.formulagenerator
+package skbgen.generation
 import skbgen.logic._
 import scala.collection.mutable.Queue
 import scala.collection.mutable.ListBuffer
@@ -220,7 +220,11 @@ object FormulaGenerator {
       val generics = generateGenerics(atomCount)
       for (atomList <- atoms.toList.combinations(atomCount)) {
         for (formula <- generics) {
-          result ++= generateParameterized(kb, formula, atomList)
+          result ++= generateParameterized(
+            kb,
+            formula,
+            atomList.map(p => p.toString)
+          )
         }
       }
     }
