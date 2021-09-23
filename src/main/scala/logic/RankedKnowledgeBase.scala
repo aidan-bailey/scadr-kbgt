@@ -92,8 +92,10 @@ class RankedKnowledgeBase(
     pw.write("[")
     for (rank <- dRanks)
         pw.write('['+rank.toParseString().split(",").map(f => s"\"$f\"").mkString(",")+"],")
-
-    pw.write('['+iRank.toParseString().split(",").map(f => s"\"$f\"").mkString(",")+']')
+    if (iRank.isEmpty)
+      pw.write("[]")
+    else
+      pw.write('['+iRank.toParseString().split(",").map(f => s"\"$f\"").mkString(",")+']')
     pw.write("]")
     pw.close()
   }
@@ -105,9 +107,12 @@ class RankedKnowledgeBase(
   def readFile(filename: String): Unit = {
     var result = new RankedKnowledgeBase()
     val lines = Source.fromFile(filename).getLines().next().init.tail.split("\\],\\[").iterator
+    var rank = new MixedKnowledgeBase
     while (lines.hasNext) {
       val line = lines.next().toString.replaceAll("\\[","").replaceAll("\\]","").replaceAll("\"", "")
-      val rank = Parser.parseString(line)
+      println(line)
+      if (!line.isBlank())
+        rank = Parser.parseString(line)
       if (lines.hasNext) {
         result.defeasibleRanks() += rank
       } else result.infiniteRank() ++= rank

@@ -35,18 +35,21 @@ class DefeasibleKnowledgeBase(formulas: DefeasibleFormula*)
     * @param filename
     *   the filename of the specified file
     */
-  override def loadFile(filename: String): this.type =
-    addAll(
-      Source
-        .fromFile(filename)
-        .getLines()
-        .next()
-        .init
-        .tail
-        .split(",")
-        .filter(string => string.contains("~>"))
-        .map(string => Parser.parseDefeasibleFormula(string.init.tail))
-    )
+  override def loadFile(filename: String): this.type = {
+    val strings = Source
+      .fromFile(filename)
+      .getLines()
+      .next()
+      .init
+      .tail
+    if (!strings.isEmpty)
+      addAll(
+        strings
+          .split(",")
+          .map(string => Parser.parseDefeasibleFormula(string.init.tail))
+      )
+    this
+  }
 
   /** clone override. */
   override def clone(): DefeasibleKnowledgeBase =

@@ -42,7 +42,10 @@ abstract class KnowledgeBase[FormulaType <: Formula](
    */
   def writeFile(filename: String): Unit = {
     val pw = new PrintWriter(new File(filename))
-    pw.write('['+toParseString().split(",").map(f => s"\"$f\"").mkString(",")+']')
+    if (isEmpty)
+      pw.write("[]")
+    else
+      pw.write('['+toParseString().split(",").map(f => s"\"$f\"").mkString(",")+']')
     pw.close()
   }
 

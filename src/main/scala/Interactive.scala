@@ -23,7 +23,7 @@ object Interactive {
     if (!helpString.isEmpty()) println(helpString)
     helpString = ""
     println(
-      "Select style: \n- (n)ormal\n- (c)conservative\n -(b)ack"
+      "Select style: \n- (n)ormal\n- (c)conservative\n- (b)ack"
     )
     print("> ")
     var in = scala.io.StdIn.readLine()
@@ -416,14 +416,17 @@ object Interactive {
         }
       }
       case "r" =>
-        if (writeRanked(rankedKB))
+        if (writeRanked(kb, rankedKB))
           return ()
       case _ => helpString = s"'${in}' is not a valid option."
     }
     return saveFile(kb, rankedKB)
   }
 
-  def writeRanked(rankedKB: RankedKnowledgeBase): Boolean = {
+  def writeRanked(
+      kb: MixedKnowledgeBase,
+      rankedKB: RankedKnowledgeBase
+  ): Boolean = {
     if (!helpString.isEmpty()) println(helpString)
     helpString = ""
     println("Enter file name [or back]: ")
@@ -431,6 +434,8 @@ object Interactive {
     var in = scala.io.StdIn.readLine()
     if (in.equals("back"))
       return false
+    if (unranked)
+      rankedKB.replace(kb.baseRank())
     rankedKB.writeFile(in + ".json")
     return true
   }
