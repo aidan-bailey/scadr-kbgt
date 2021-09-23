@@ -1,6 +1,7 @@
-package skbgen.logic
+package kbgt.logic
 
-import skbgen._
+import kbgt._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable.ListBuffer
 import org.tweetyproject.logics.pl.syntax._
 import org.tweetyproject.logics.pl.sat._
@@ -8,93 +9,64 @@ import org.tweetyproject.logics.pl.reasoner.SatReasoner
 import java.io.PrintWriter
 import java.io.File
 import scala.collection.mutable
+import java.io.FileWriter
+import scala.io.Source
 
-class ClassicalKnowledgeBase(kb: mutable.Set[Formula])
-    extends mutable.Set[Formula] {
+/** A classical propositional knowledge base.
+  *
+  * Extends [[skbgen.logic.KnowledgeBase]]
+  *
+  * @constructor
+  *   create a new classical knowledge base with a sequence of classical
+  *   formulas
+  * @param formulas
+  *   the sequence of classical formulas.
+  */
+class ClassicalKnowledgeBase(formulas: ClassicalFormula*)
+    extends KnowledgeBase[ClassicalFormula](
+      mutable.Set[ClassicalFormula](formulas: _*)
+    ) {
 
-  def this(formula: Formula*) =
-    this(mutable.Set(formula: _*))
+  /** Checks whether the classical knowledge base is satisfiable.
+    *
+    * @return
+    *   true if satisfiable, false if otherwise
+    */
+  def isSatisfiable(): Boolean =
+    forall(p => p.isSatisfiable())
 
-  def atoms(): Set[Atom] = {
-    var result = new ListBuffer[Atom]()
-    for (p <- kb)
-      result ++= p.atoms()
-    return result.toSet
-  }
+  /** Checks whether a given classical formula is entailed by the classical
+    * knowledge base.
+    *
+    * @param formula
+    *   the classical formula to check entailment of
+    * @return
+    *   true if the classical formula is entailed, false if otherwise
+    */
+  def entails(formula: ClassicalFormula): Boolean =
+    reasoner.query(toPlBeliefSet, formula.getPlFormula())
 
-  /** Returns the set of models. */
-  def models(): Set[Map[String, Boolean]] = {
-    var iter = iterator
-    if (iter.isEmpty)
-      return Set()
-    var formula = iter.next()
-    while (iter.hasNext)
-      formula = BinCon(BinOp.And, formula, iter.next())
-    var modelSet = formula.models()
-    return modelSet
-  }
+  /** Loads classical statements from a specified file into the classical
+    * knowledge base.
+    *
+    * @param filename
+    *   the filename of the specified file
+    */
+  override def loadFile(filename: String): this.type =
+    addAll(
+      Source
+        .fromFile(filename)
+        .getLines()
+        .next()
+        .init
+        .tail
+        .split(",")
+        .filter(string => !string.contains("~>"))
+        .map(string => Parser.parseClassicalFormula(string.init.tail))
+    )
 
-  /** Returns the PlBeliefSet of the models. */
-  def tweety(): PlBeliefSet = {
-    var iter = iterator
-    if (iter.isEmpty)
-      return new PlBeliefSet()
-    var result = new PlBeliefSet()
-    while (iter.hasNext)
-      result.add(iter.next().tweety())
-    return result
-  }
-
-  /** Checks entailment. */
-  def entails(formula: Formula): Boolean = {
-    Tweety.reasoner.query(tweety, formula.tweety())
-  }
-
-  def writeFile(filename: String) = {
-    val pw = new PrintWriter(new File(filename + ".kb"))
-    pw.write(toParseString)
-    pw.close()
-  }
-
-  def toParseString(): String = {
-    var buffer = ""
-    for (formula <- kb)
-      buffer = buffer + formula.tweety.toString() + ','
-    if (buffer.nonEmpty)
-      buffer = buffer.substring(0, buffer.size - 1)
-    return buffer
-  }
-
-  def ++(ckb: ClassicalKnowledgeBase): ClassicalKnowledgeBase =
-    clone().addAll(ckb)
-
-  def --(ckb: ClassicalKnowledgeBase): ClassicalKnowledgeBase =
-    clone().subtractAll(ckb)
-
-  // Set Overrides
+  /** clone override. */
   override def clone(): ClassicalKnowledgeBase =
-    new ClassicalKnowledgeBase(kb.clone())
-  override def iterator: Iterator[Formula] = kb.iterator
-  override def contains(formula: Formula): Boolean = kb.contains(formula)
-  override def +(formula: Formula): ClassicalKnowledgeBase =
-    clone().addOne(formula)
-  override def -(formula: Formula): ClassicalKnowledgeBase =
-    clone().subtractOne(formula)
-  override def addOne(
-      elem: Formula
-  ): this.type = {
-    if (!kb.contains(elem)) this.kb += elem
-    this
-  }
-  override def subtractOne(
-      elem: Formula
-  ): this.type = {
-    if (kb.contains(elem)) this.kb -= elem
-    this
-  }
-  override def clear(): Unit = kb.clear()
-  override def toString(): String = {
-    kb.map(formula => formula.toString()).toList.mkString(",")
-  }
+    new ClassicalKnowledgeBase(iterator.toSeq: _*)
 
 }

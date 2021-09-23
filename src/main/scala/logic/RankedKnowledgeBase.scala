@@ -1,6 +1,6 @@
-package skbgen.logic
+package kbgt.logic
 
-import skbgen._
+import kbgt._
 import scala.collection.mutable.ListBuffer
 import org.tweetyproject.logics.pl.syntax._
 import org.tweetyproject.logics.pl.sat._
@@ -8,100 +8,148 @@ import org.tweetyproject.logics.pl.reasoner.SatReasoner
 import java.io.PrintWriter
 import java.io.File
 import scala.collection.mutable
+import java.util.ArrayList
+import scala.io.Source
 
-class RankedKnowledgeBase(rkb: List[ClassicalKnowledgeBase])
-    extends mutable.ArrayStack[ClassicalKnowledgeBase] {
+/** A ranked knowledge base.
+ *
+ * @constructor
+ *   create a new ranked knowledge base with a listbuffer of defeasible ranks and a mixed knowledge base infinite rank.
+ * @param dRanks the defeasible ranks
+ * @param iRanks the infinite rank
+ */
+class RankedKnowledgeBase(
+    dRanks: ListBuffer[MixedKnowledgeBase],
+    iRank: MixedKnowledgeBase
+) {
 
-  def this(ckbs: ClassicalKnowledgeBase*) = {
-    this(ckbs.toList)
+  def this() = this(ListBuffer(), new MixedKnowledgeBase())
+
+  /** Gets the defeasible ranks.
+   *
+   * @return the defeasible ranks
+   */
+  def defeasibleRanks(): ListBuffer[MixedKnowledgeBase] = dRanks
+
+  /** Gets the infinite rank.
+   *
+   * @return the infinite rank
+   */
+  def infiniteRank(): MixedKnowledgeBase = iRank
+
+  /** Replaces the current ranked knowledge base with a new one.
+   *
+   * @param rankedKB the new ranked knowledge base
+   * */
+  def replace(rankedKB: RankedKnowledgeBase): this.type = {
+    dRanks.clear()
+    dRanks.addAll(rankedKB.defeasibleRanks().clone())
+    iRank.clear()
+    iRank ++= rankedKB.infiniteRank().clone()
+    this
   }
 
-  def prettyPrint(): Unit = {
-    println("---------------------------------------------------------------")
-    println(" RANK | STATES")
-    println("---------------------------------------------------------------")
-    for (rankIndex <- 0 to rkb.size - 1) {
-      print(
-        if (rkb.size == rankIndex + 1) "     ∞|"
+  /** Clear the ranked knowledge base. */
+  def clear(): Unit = {
+    dRanks.clear()
+    iRank.clear()
+  }
+
+  /** Gets the defeasible rank count.
+   *
+   * @return the defeasible rank count
+   */
+  def rankCount() = dRanks.size
+
+  /** Gets the mixed knowledge base.
+   *
+   * @return the mixed knowledge base
+   */
+  def getMixedKnowledgeBase(): MixedKnowledgeBase = {
+    dRanks.foldLeft(new MixedKnowledgeBase())((mkb, f) => mkb ++= f).addAll(iRank)
+  }
+
+  def toPlBeliefSetArrayList(): ArrayList[PlBeliefSet] = {
+    var result = new ArrayList[PlBeliefSet]()
+    for (cbs <- dRanks.map(f => f.toPlBeliefSet())) {
+      var beliefSet = new PlBeliefSet()
+      beliefSet.addAll(cbs)
+      result.add(beliefSet)
+    }
+    var cbs = iRank.toPlBeliefSet()
+    var beliefSet = new PlBeliefSet()
+    beliefSet.addAll(cbs)
+    result.add(beliefSet)
+    return result
+  }
+
+  /** Writes the ranked knowledge base to a file.
+   *
+   * @param filename the name of the file to output to.
+   */
+  def writeFile(filename: String) = {
+    val pw = new PrintWriter(new File(filename))
+    pw.write("[")
+    for (rank <- dRanks)
+        pw.write('['+rank.toParseString().split(",").map(f => s"\"$f\"").mkString(",")+"],")
+
+    pw.write('['+iRank.toParseString().split(",").map(f => s"\"$f\"").mkString(",")+']')
+    pw.write("]")
+    pw.close()
+  }
+
+  /** Read in a ranked knowledge base from a specified file.
+   *
+   * @param filename the filename of the specified file.
+   */
+  def readFile(filename: String): Unit = {
+    var result = new RankedKnowledgeBase()
+    val lines = Source.fromFile(filename).getLines().next().init.tail.split("\\],\\[").iterator
+    while (lines.hasNext) {
+      val line = lines.next().toString.replaceAll("\\[","").replaceAll("\\]","").replaceAll("\"", "")
+      val rank = Parser.parseString(line)
+      if (lines.hasNext) {
+        result.defeasibleRanks() += rank
+      } else result.infiniteRank() ++= rank
+    }
+   clear()
+   defeasibleRanks() ++= result.defeasibleRanks()
+   infiniteRank() ++= result.infiniteRank()
+  }
+
+  /** toString override. */
+  override def toString(): String = {
+    var result = StringBuilder.newBuilder
+    result.addAll(
+      "\n---------------------------------------------------------------\n"
+    )
+    result.addAll(" RANK | STATES\n")
+    result.addAll(
+      "---------------------------------------------------------------\n"
+    )
+    for (rankIndex <- 0 to dRanks.size) {
+      result.addAll(
+        if (dRanks.size == rankIndex) "     ∞|"
         else f"$rankIndex%6s|"
       )
-      val states = rkb(rankIndex).toList
+      val states =
+        if (dRanks.size != rankIndex) dRanks(rankIndex).toList else iRank.toList
       var buffer = ""
       for (stateIndex <- 0 to states.size - 1) {
         val stateStr = states(stateIndex).toString()
         if (buffer.size + 1 + stateStr.size > 55) {
-          print(buffer)
+          result.addAll(buffer + "\n")
           buffer = ""
           println()
-          print("      |")
+          result.addAll("      |")
         }
         buffer = buffer + ' ' + stateStr
       }
-      print(buffer)
-      println(
-        "\n---------------------------------------------------------------"
+      result.addAll(buffer)
+      result.addAll(
+        "\n---------------------------------------------------------------\n"
       )
     }
+    return result.toString()
   }
-
-  def mixedKnowledgeBase: MixedKnowledgeBase = {
-    var ckb = new ClassicalKnowledgeBase
-    for (newCKB <- rkb.init)
-      ckb ++= newCKB.clone()
-    var dkb = new DefeasibleKnowledgeBase
-    for (formula <- rkb.last.clone()) {
-      formula match {
-        case BinCon(BinOp.Implies, leftOperand, rightOperand) =>
-          dkb += DefeasibleImplication(leftOperand, rightOperand)
-        case _ => ()
-      }
-    }
-    return new MixedKnowledgeBase(ckb, dkb)
-  }
-
-  def writeFile(filename: String) = {
-    val pw = new PrintWriter(new File(filename + ".ranked"))
-    for (rank <- rkb) {
-      var buffer = ""
-      for (state <- rank)
-        buffer = buffer + state.tweety().toString() + ','
-      buffer = buffer.substring(0, buffer.size - 1)
-      pw.write(buffer + "\n")
-    }
-    pw.close()
-  }
-
-  def addDefeasible(formula: DefeasibleImplication) = {
-    var atomSet = mutable.Set[Atom]()
-    atomSet.addAll(formula.atoms)
-    var stateSet = mutable.Set[Formula]()
-    stateSet += formula.materialize()
-    // check classical
-    var flag = true
-    while (flag) {
-      flag = false
-      // check defeasible ranks
-      for (rank <- rkb.init) {
-        var newStates = mutable.Set[Formula]()
-        for (state <- rank) {
-          val atoms = state.atoms()
-          if (atoms.intersect(atomSet).nonEmpty) {
-            atomSet.addAll(atoms)
-            newStates.add(state)
-            flag = true
-          }
-        }
-        // remove identified states
-        rank --= newStates
-      }
-      // check classical rank
-      for (state <- rkb.last) {
-        val atoms = state.atoms()
-        if (atoms.intersect(atomSet).nonEmpty) {
-          atomSet.addAll(atoms)
-        }
-      }
-    }
-  }
-
 }

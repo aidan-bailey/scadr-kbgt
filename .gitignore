@@ -58,3 +58,4 @@ project/**/metals.sbt
 
 *.txt
 .scalafmt.conf
+*.json

@@ -1,68 +1,55 @@
-package skbgen.logic
+package kbgt.logic
 
-import skbgen.config._
+import kbgt._
 import scala.collection.mutable.ListBuffer
 import org.tweetyproject.logics.pl.syntax._
 import org.tweetyproject.logics.pl.sat._
 import org.tweetyproject.logics.pl.reasoner.SatReasoner
+import scala.jdk.CollectionConverters._
 import java.io.PrintWriter
 import java.io.File
 import scala.collection.mutable
+import scala.io.Source
 
-class DefeasibleKnowledgeBase(
-    kb: mutable.Set[DefeasibleImplication]
-) extends collection.mutable.Set[DefeasibleImplication] {
+/** A defeasible propositional knowledge base.
+  *
+  * Extends [[skben.logic.KnowledgeBase]]
+  */
+class DefeasibleKnowledgeBase(formulas: DefeasibleFormula*)
+    extends KnowledgeBase[DefeasibleFormula](
+      mutable.Set[DefeasibleFormula](formulas: _*)
+    ) {
 
-  def this(formula: DefeasibleImplication*) = {
-    this(mutable.Set(formula: _*))
-  }
+  /** Gets the classical knowledge base materialization of the defeasible
+    * knowledge base.
+    *
+    * @return
+    *   the classical knowledge base materialization
+    */
+  def getMaterialization(): ClassicalKnowledgeBase =
+    new ClassicalKnowledgeBase(formulas.map(f => f.getMaterialization()): _*)
 
-  def materialize(): ClassicalKnowledgeBase =
-    new ClassicalKnowledgeBase(for (f <- kb) yield f.materialize())
+  /** Loads defeasible statements from a specified file into the defeasible
+    * knowledge base.
+    *
+    * @param filename
+    *   the filename of the specified file
+    */
+  override def loadFile(filename: String): this.type =
+    addAll(
+      Source
+        .fromFile(filename)
+        .getLines()
+        .next()
+        .init
+        .tail
+        .split(",")
+        .filter(string => string.contains("~>"))
+        .map(string => Parser.parseDefeasibleFormula(string.init.tail))
+    )
 
-  def writeFile(filename: String) = {
-    val pw = new PrintWriter(new File(filename + ".kb"))
-    pw.write(toParseString)
-    pw.close()
-  }
-
-  def toParseString(): String = {
-    var buffer = ""
-    for (formula <- kb)
-      buffer = buffer + formula.toParseString + ','
-    if (buffer.nonEmpty)
-      buffer = buffer.substring(0, buffer.size - 1)
-    return buffer
-  }
-
-  // Set Overrides
-  override def +(formula: DefeasibleImplication): DefeasibleKnowledgeBase =
-    clone().addOne(formula)
-  def ++(dkb: DefeasibleKnowledgeBase): DefeasibleKnowledgeBase =
-    clone().addAll(dkb)
-  override def -(formula: DefeasibleImplication): DefeasibleKnowledgeBase =
-    clone().subtractOne(formula)
-  def --(dkb: DefeasibleKnowledgeBase): DefeasibleKnowledgeBase =
-    clone().subtractAll(dkb)
-  override def iterator: Iterator[DefeasibleImplication] = kb.iterator
-  override def contains(defImpl: DefeasibleImplication): Boolean =
-    kb.contains(defImpl)
-  override def addOne(
-      elem: DefeasibleImplication
-  ): this.type = {
-    if (!kb.contains(elem)) this.kb += elem
-    this
-  }
-  override def subtractOne(
-      elem: DefeasibleImplication
-  ): this.type = {
-    if (kb.contains(elem)) this.kb -= elem
-    this
-  }
-  override def clear(): Unit = kb.clear()
+  /** clone override. */
   override def clone(): DefeasibleKnowledgeBase =
-    new DefeasibleKnowledgeBase(kb.clone())
-  override def toString(): String = {
-    kb.map(formula => formula.toString()).toList.mkString(",")
-  }
+    new DefeasibleKnowledgeBase(iterator.toSeq: _*)
+
 }

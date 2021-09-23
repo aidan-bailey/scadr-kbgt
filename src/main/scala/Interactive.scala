@@ -1,19 +1,483 @@
-package skbgen
+package kbgt
 
 import java.io.FileNotFoundException
 import org.tweetyproject.commons.ParserException
-import skbgen.logic._
-import skbgen.generation._
-import skbgen._
+import kbgt.logic._
+import kbgt.generation._
+import kbgt._
 import java.io.PrintWriter
 import java.io.File
 
 object Interactive {
+
+  var unranked = true
+  var helpString = ""
+
+  def generateStyle(
+      kb: MixedKnowledgeBase,
+      ranks: Int,
+      states: Int,
+      distributionFunction: (Int, Int, Int) => Int,
+      defeasibleOnly: Boolean
+  ): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Select style: \n- (n)ormal\n- (c)conservative\n -(b)ack"
+    )
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    in match {
+      case "b" => return false
+      case "n" => {
+        var (newCKB, newDKB) = KBGenerator
+          .RankedGenerate(
+            ranks,
+            states,
+            distributionFunction,
+            defeasibleOnly
+          )
+          .getKnowledgeBases()
+        kb.clear()
+        kb ++= newDKB
+        kb ++= newCKB
+        unranked = true
+        return true
+      }
+      case "c" => {
+        var (newCKB, newDKB) = KBGenerator
+          .ConservativeRankedGenerate(
+            ranks,
+            states,
+            distributionFunction,
+            defeasibleOnly
+          )
+          .getKnowledgeBases()
+        kb.clear()
+        kb ++= newDKB
+        kb ++= newCKB
+        unranked = true
+        return true
+      }
+      case _ =>
+        helpString = s"'$in' is not a valid option."
+    }
+    return generateStyle(
+      kb,
+      ranks,
+      states,
+      distributionFunction,
+      defeasibleOnly
+    )
+  }
+
+  def generateType(
+      kb: MixedKnowledgeBase,
+      ranks: Int,
+      state: Int,
+      distributionFunction: (Int, Int, Int) => Int
+  ): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Select type: \n- (m)ixed\n- (d)defeasibleOnly\n- (b)ack"
+    )
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    in match {
+      case "m" => {
+        if (generateStyle(kb, ranks, state, distributionFunction, false))
+          return true
+      }
+      case "d" => {
+        if (generateStyle(kb, ranks, state, distributionFunction, true))
+          return true
+      }
+      case "b" => {
+        return false
+      }
+      case _ =>
+        helpString = s"'$in' is not a valid option."
+    }
+    return generateType(kb, ranks, state, distributionFunction)
+  }
+
+  def generateDistribution(
+      kb: MixedKnowledgeBase,
+      ranks: Int,
+      states: Int
+  ): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Select distribution: \n- (1) Uniform\n- (2) Exponential\n- (3) Normal\n- (4) Inverted-Exponential\n- (5) Inverted-Normal\n- (b)ack"
+    )
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    in match {
+      case "1" => {
+        if (generateType(kb, ranks, states, DistributionFunction.Uniform))
+          return true
+      }
+      case "2" => {
+        if (generateType(kb, ranks, states, DistributionFunction.Exponential))
+          return true
+      }
+      case "3" => {
+        if (generateType(kb, ranks, states, DistributionFunction.Normal))
+          return true
+      }
+      case "4" => {
+        if (
+          generateType(
+            kb,
+            ranks,
+            states,
+            DistributionFunction.InvertedExponential
+          )
+        )
+          return true
+      }
+      case "5" => {
+        if (
+          generateType(
+            kb,
+            ranks,
+            states,
+            DistributionFunction.InvertedNormal
+          )
+        )
+          return true
+      }
+      case "b" => return false
+      case _   => helpString = s"'$in' is not a valid option"
+    }
+    return generateDistribution(kb, ranks, states)
+  }
+
+  def generateStatements(
+      kb: MixedKnowledgeBase,
+      ranks: Int
+  ): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Enter number of defeasible statements [or back]: "
+    )
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return false
+    try {
+      var states = Integer.parseInt(in)
+      if (generateDistribution(kb, ranks, states))
+        return true
+    } catch {
+      case e: NumberFormatException =>
+        helpString = s"'$in' is not a valid option."
+    }
+    return generateStatements(kb, ranks)
+  }
+
+  def generate(kb: MixedKnowledgeBase): Unit = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Enter number of defeasible ranks [or back]: "
+    )
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return ()
+    try {
+      var ranks = Integer.parseInt(in)
+      if (generateStatements(kb, ranks))
+        return ()
+    } catch {
+      case e: NumberFormatException =>
+        helpString = s"'$in' is not a valid option."
+    }
+    return generate(kb)
+  }
+
+  def removeStatement(kb: MixedKnowledgeBase): Unit = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Enter statement [or back]: "
+    )
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return ()
+    if (in.contains("~>")) {
+      try {
+        val pos = in.indexOf("~>")
+        val ante =
+          Parser.parseClassicalFormula(in.substring(0, pos))
+        val desc =
+          Parser.parseClassicalFormula(in.substring(pos + 2))
+        kb -= DefeasibleFormula(ante, desc)
+        unranked = true
+        return ()
+      } catch {
+        case e: ParserException =>
+          helpString = s"Parsing error for defeasible statement '$in'."
+      }
+    } else {
+      try {
+        var formula = Parser.parseClassicalFormula(in)
+        kb -= formula
+        unranked = true
+        return ()
+      } catch {
+        case e: ParserException =>
+          helpString = s"Parsing error for classical statement '$in'."
+      }
+    }
+    return removeStatement(kb)
+  }
+
+  def loadClassical(kb: MixedKnowledgeBase): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println("Enter file name [or back]: ")
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return false
+    try {
+      kb ++= new ClassicalKnowledgeBase().loadFile(in + ".json")
+      unranked = true
+      println(
+        s"Classical statements from file '${in + ".json"}' loaded."
+      )
+      return true
+    } catch {
+      case e: FileNotFoundException =>
+        helpString = s"File '${in + ".json"}' not found."
+      case e: ParserException =>
+        helpString = s"Parsing error in file '${in + ".json"}'."
+    }
+    return loadClassical(kb)
+  }
+
+  def loadDefeasible(kb: MixedKnowledgeBase): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println("Enter file name [or back]: ")
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return false
+    try {
+      kb ++= new DefeasibleKnowledgeBase()
+        .loadFile(in + ".json")
+      unranked = true
+      println(
+        s"Defeasible statements from file '${in + ".json"}' loaded."
+      )
+      return true
+    } catch {
+      case e: FileNotFoundException =>
+        helpString = s"File '${in + ".json"}' not found."
+      case e: ParserException =>
+        helpString = s"Parsing error in file '${in + ".json"}'."
+    }
+    return loadDefeasible(kb)
+  }
+
+  def loadMixed(kb: MixedKnowledgeBase): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println("Enter file name [or back]: ")
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return false
+    try {
+      kb.loadFile(in + ".json")
+      unranked = true
+      println(s"All statements from file '${in + ".json"}' loaded.")
+      return true
+    } catch {
+      case e: FileNotFoundException =>
+        helpString = s"File '${in + ".json"}' not found."
+      case e: ParserException =>
+        helpString = s"Parsing error in file '${in + ".json"}'."
+    }
+    return loadMixed(kb)
+  }
+
+  def loadRanked(
+      kb: MixedKnowledgeBase,
+      rankedKB: RankedKnowledgeBase
+  ): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println("Enter file name [or back]: ")
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return false
+    try {
+      rankedKB.readFile(in + ".json")
+      val mkb = rankedKB.getMixedKnowledgeBase()
+      kb.clear()
+      kb ++= mkb.getClassical
+      kb ++= mkb.getDefeasible
+      unranked = false
+      println(
+        s"Ranked knowledge base from file '${in + ".json"}' loaded."
+      )
+      return true
+    } catch {
+      case e: FileNotFoundException =>
+        helpString = s"File '${in + ".json"}' not found."
+      case e: ParserException =>
+        helpString = s"Parsing error in file '${in + ".json"}'."
+    }
+    return loadRanked(kb, rankedKB)
+  }
+
+  def loadFile(
+      kb: MixedKnowledgeBase,
+      rankedKB: RankedKnowledgeBase
+  ): Unit = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Select load type:\n- (c)lassical knowledge base\n- (d)efeasible knowledge base\n- (m)ixed knowledge base\n- (r)anked knowledge base\n- (b)ack"
+    )
+    print("> ")
+    val in = scala.io.StdIn.readLine()
+    in match {
+      case "c" =>
+        if (loadClassical(kb))
+          return ()
+      case "d" =>
+        if (loadDefeasible(kb))
+          return ()
+      case "m" =>
+        if (loadMixed(kb))
+          return ()
+      case "r" =>
+        if (loadRanked(kb, rankedKB))
+          return ()
+      case "b" => return ()
+      case _   => helpString = s"'${in}' is not a valid option."
+    }
+    return loadFile(kb, rankedKB)
+  }
+
+  def saveFile(kb: MixedKnowledgeBase, rankedKB: RankedKnowledgeBase): Unit = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Select save type:\n- (c)lassical knowledge base\n- (d)efeasible knowledge base\n- (m)ixed knowledge base\n- (r)anked knowledge base\n- (b)ack"
+    )
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    in match {
+      case "b" => {
+        return ()
+      }
+      case "c" => {
+        if (!helpString.isEmpty()) println(helpString)
+        helpString = ""
+        println("Enter file name [or back]: ")
+        print("> ")
+        in = scala.io.StdIn.readLine()
+        if (!in.equals("back")) {
+          kb.getClassical.writeFile(in + ".json")
+          return ()
+        }
+      }
+      case "d" => {
+        if (!helpString.isEmpty()) println(helpString)
+        helpString = ""
+        println("Enter file name [or back]: ")
+        print("> ")
+        in = scala.io.StdIn.readLine()
+        if (!in.equals("back")) {
+          kb.getDefeasible.writeFile(in + ".json")
+          return ()
+        }
+      }
+      case "m" => {
+        if (!helpString.isEmpty()) println(helpString)
+        helpString = ""
+        println("Enter file name [or back]: ")
+        print("> ")
+        in = scala.io.StdIn.readLine()
+        if (!in.equals("back")) {
+          kb.writeFile(in + ".json")
+          return ()
+        }
+      }
+      case "r" =>
+        if (writeRanked(rankedKB))
+          return ()
+      case _ => helpString = s"'${in}' is not a valid option."
+    }
+    return saveFile(kb, rankedKB)
+  }
+
+  def writeRanked(rankedKB: RankedKnowledgeBase): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println("Enter file name [or back]: ")
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return false
+    rankedKB.writeFile(in + ".json")
+    return true
+  }
+
+  def addStatement(kb: MixedKnowledgeBase): Unit = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println(
+      "Enter statement (&&,||,=>,<=>,!,~>) [or back]: "
+    )
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    if (in.equals("back"))
+      return ()
+    if (in.contains("~>")) {
+      try {
+        val pos = in.indexOf("~>")
+        val ante =
+          Parser.parseClassicalFormula(in.substring(0, pos))
+        val desc =
+          Parser.parseClassicalFormula(in.substring(pos + 2))
+        kb += DefeasibleFormula(ante, desc)
+        unranked = true
+        return ()
+      } catch {
+        case e: ParserException =>
+          helpString = s"Parsing error for defeasible statement $in."
+      }
+    } else {
+      try {
+        var formula = Parser.parseClassicalFormula(in)
+        kb += formula
+        unranked = true
+        return ()
+      } catch {
+        case e: ParserException =>
+          helpString = s"Parsing error for classical statement $in."
+      }
+    }
+    return addStatement(kb)
+  }
+
   def knowledgebaseREPL(
       kb: MixedKnowledgeBase
   ) = {
     var flag = true
-    var rankedKB = kb.rank()
+    var rankedKB = kb.baseRank()
     var menu = List(
       "Select an option:",
       "- (a)dd statement",
@@ -27,8 +491,8 @@ object Interactive {
     )
     var helpString = ""
     while (flag) {
-      println("Classical: " + kb.classical)
-      println("Defeasible: " + kb.defeasible)
+      println("Classical: " + kb.getClassical)
+      println("Defeasible: " + kb.getDefeasible)
       if (!helpString.isEmpty()) println(helpString)
       helpString = ""
       for (item <- menu)
@@ -36,378 +500,21 @@ object Interactive {
       print("> ")
       var in = scala.io.StdIn.readLine()
       in match {
-        case "g" => {
-          while (flag) {
-            if (!helpString.isEmpty()) println(helpString)
-            helpString = ""
-            println(
-              "Enter number of ranks [or back]: "
-            )
-            print("> ")
-            in = scala.io.StdIn.readLine()
-            if (!in.equals("back"))
-              try {
-                var ranks = Integer.parseInt(in)
-                while (flag) {
-                  if (!helpString.isEmpty()) println(helpString)
-                  helpString = ""
-                  println(
-                    "Enter number of statements [or back]: "
-                  )
-                  print("> ")
-                  in = scala.io.StdIn.readLine()
-                  if (!in.equals("back")) {
-                    var states = Integer.parseInt(in)
-                    while (flag) {
-                      if (!helpString.isEmpty()) println(helpString)
-                      helpString = ""
-                      println(
-                        "Select distribution: \n- (1) Uniform\n- (2) Exponential\n- (3) Normal\n- (4) Inverted-Exponential\n- (5) Inverted-Normal"
-                      )
-                      print("> ")
-                      in = scala.io.StdIn.readLine()
-                      in match {
-                        case "1" => {
-                          var (newDKB, newCKB) = KBGenerator.generateDefeasible(
-                            new Config(
-                              rankCount = ranks,
-                              stateCount = states,
-                              distributionOption = DistributionOption.Uniform
-                            )
-                          )
-                          kb.clear()
-                          kb.defeasible ++= newDKB
-                          kb.classical ++= newCKB
-                          rankedKB = kb.rank()
-                          flag = false
-                        }
-                        case "2" => {
-                          var (newDKB, newCKB) = KBGenerator.generateDefeasible(
-                            new Config(
-                              rankCount = ranks,
-                              stateCount = states,
-                              distributionOption =
-                                DistributionOption.Exponential
-                            )
-                          )
-                          kb.clear()
-                          kb.defeasible ++= newDKB
-                          kb.classical ++= newCKB
-                          rankedKB = kb.rank()
-                          flag = false
-                        }
-                        case "3" => {
-                          var (newDKB, newCKB) = KBGenerator.generateDefeasible(
-                            new Config(
-                              rankCount = ranks,
-                              stateCount = states,
-                              distributionOption = DistributionOption.Normal
-                            )
-                          )
-                          kb.clear()
-                          kb.defeasible ++= newDKB
-                          kb.classical ++= newCKB
-                          rankedKB = kb.rank()
-                          flag = false
-                        }
-                        case "4" => {
-                          var (newDKB, newCKB) = KBGenerator.generateDefeasible(
-                            new Config(
-                              rankCount = ranks,
-                              stateCount = states,
-                              distributionOption =
-                                DistributionOption.InvertedExponential
-                            )
-                          )
-                          kb.clear()
-                          kb.defeasible ++= newDKB
-                          kb.classical ++= newCKB
-                          rankedKB = kb.rank()
-                          flag = false
-                        }
-                        case "5" => {
-                          var (newDKB, newCKB) = KBGenerator.generateDefeasible(
-                            new Config(
-                              rankCount = ranks,
-                              stateCount = states,
-                              distributionOption =
-                                DistributionOption.InvertedNormal
-                            )
-                          )
-                          kb.clear()
-                          kb.defeasible ++= newDKB
-                          kb.classical ++= newCKB
-                          rankedKB = kb.rank()
-                          flag = false
-                        }
-                        case _ => helpString = s"'$in'"
-                      }
-                    }
-                  } else
-                    flag = false
-                }
-              } catch {
-                case e: NumberFormatException =>
-                  helpString = s"'$in' is not a valid option."
-              }
-            else
-              flag = false
-          }
-          flag = true
-        }
-        case "a" => {
-          while (flag) {
-            if (!helpString.isEmpty()) println(helpString)
-            helpString = ""
-            println(
-              "Enter statement [or back]: "
-            )
-            print("> ")
-            in = scala.io.StdIn.readLine()
-            if (!in.equals("back"))
-              if (in.contains("~>")) {
-                try {
-                  val pos = in.indexOf("~>")
-                  val ante =
-                    Tweety.parseFormula(in.substring(0, pos))
-                  val desc =
-                    Tweety.parseFormula(in.substring(pos + 2))
-                  kb.defeasible += DefeasibleImplication(ante, desc)
-                  rankedKB = kb.rank()
-                  flag = false
-                } catch {
-                  case e: ParserException =>
-                    helpString = s"Parsing error for defeasible statement $in."
-                }
-              } else {
-                try {
-                  var formula = Tweety.parseFormula(in)
-                  kb.classical += formula
-                  rankedKB = kb.rank()
-                  flag = false
-                } catch {
-                  case e: ParserException =>
-                    helpString = s"Parsing error for classical statement $in."
-                }
-              }
-            else
-              flag = false
-          }
-          flag = true
-        }
-        case "r" => {
-          while (flag) {
-            if (!helpString.isEmpty()) println(helpString)
-            helpString = ""
-            println(
-              "Enter statement [or back]: "
-            )
-            print("> ")
-            in = scala.io.StdIn.readLine()
-            if (!in.equals("back"))
-              if (in.contains("~>")) {
-                try {
-                  val pos = in.indexOf("~>")
-                  val ante =
-                    Tweety.parseFormula(in.substring(0, pos))
-                  val desc =
-                    Tweety.parseFormula(in.substring(pos + 2))
-                  kb.defeasible -= DefeasibleImplication(ante, desc)
-                  rankedKB = kb.rank()
-                  flag = false
-                } catch {
-                  case e: ParserException =>
-                    helpString =
-                      s"Parsing error for defeasible statement '$in'."
-                }
-              } else {
-                try {
-                  var formula = Tweety.parseFormula(in)
-                  kb.classical -= formula
-                  rankedKB = kb.rank()
-                  flag = false
-                } catch {
-                  case e: ParserException =>
-                    helpString = s"Parsing error for classical statement '$in'."
-                }
-              }
-            else
-              flag = false
-          }
-          flag = true
-        }
-        case "s" => {
-          while (flag) {
-            if (!helpString.isEmpty()) println(helpString)
-            helpString = ""
-            println(
-              "Select save type:\n- (c)lassical knowledge base\n- (d)efeasible knowledge base\n- (m)ixed knowledge base\n- (r)anked knowledge base\n- (b)ack"
-            )
-            print("> ")
-            in = scala.io.StdIn.readLine()
-            in match {
-              case "c" => {
-                if (!helpString.isEmpty()) println(helpString)
-                helpString = ""
-                println("Enter file name [or back]: ")
-                print("> ")
-                in = scala.io.StdIn.readLine()
-                if (!in.equals("back")) {
-                  kb.classical.writeFile(in)
-                  flag = false
-                }
-              }
-              case "d" => {
-                if (!helpString.isEmpty()) println(helpString)
-                helpString = ""
-                println("Enter file name [or back]: ")
-                print("> ")
-                in = scala.io.StdIn.readLine()
-                if (!in.equals("back")) {
-                  kb.defeasible.writeFile(in)
-                  flag = false
-                }
-              }
-              case "m" => {
-                if (!helpString.isEmpty()) println(helpString)
-                helpString = ""
-                println("Enter file name [or back]: ")
-                print("> ")
-                in = scala.io.StdIn.readLine()
-                if (!in.equals("back")) {
-                  kb.writeFile(in)
-                  flag = false
-                }
-              }
-              case "r" => {
-                if (!helpString.isEmpty()) println(helpString)
-                helpString = ""
-                println("Enter file name [or back]: ")
-                print("> ")
-                in = scala.io.StdIn.readLine()
-                if (!in.equals("back")) {
-                  rankedKB.writeFile(in)
-                  flag = false
-                }
-              }
-              case _ => helpString = s"'${in}' is not a valid option."
-            }
-          }
-          flag = true
-        }
-        case "l" => {
-          while (flag) {
-            if (!helpString.isEmpty()) println(helpString)
-            helpString = ""
-            println(
-              "Select load type:\n- (c)lassical knowledge base\n- (d)efeasible knowledge base\n- (m)ixed knowledge base\n- (r)anked knowledge base\n- (b)ack"
-            )
-            print("> ")
-            in = scala.io.StdIn.readLine()
-            in match {
-              case "c" => {
-                if (!helpString.isEmpty()) println(helpString)
-                helpString = ""
-                println("Enter file name [or back]: ")
-                print("> ")
-                in = scala.io.StdIn.readLine()
-                if (!in.equals("back")) {
-                  try {
-                    kb.classical ++= Tweety.parseFile(in).classical
-                    rankedKB = kb.rank()
-                    println(
-                      s"Classical statements from file '${in + ".kb"}' loaded."
-                    )
-                    flag = false
-                  } catch {
-                    case e: FileNotFoundException =>
-                      helpString = s"File '${in + ".kb"}' not found."
-                    case e: ParserException =>
-                      helpString = s"Parsing error in file '${in + ".kb"}'."
-                  }
-                }
-              }
-              case "d" => {
-                if (!helpString.isEmpty()) println(helpString)
-                helpString = ""
-                println("Enter file name [or back]: ")
-                print("> ")
-                in = scala.io.StdIn.readLine()
-                if (!in.equals("back")) {
-                  try {
-                    kb.defeasible ++= Tweety.parseFile(in).defeasible
-                    rankedKB = kb.rank()
-                    println(
-                      s"Defeasible statements from file '${in + ".kb"}' loaded."
-                    )
-                    flag = false
-                  } catch {
-                    case e: FileNotFoundException =>
-                      helpString = s"File '${in + ".kb"}' not found."
-                    case e: ParserException =>
-                      helpString = s"Parsing error in file '${in + ".kb"}'."
-                  }
-                }
-              }
-              case "m" => {
-                if (!helpString.isEmpty()) println(helpString)
-                helpString = ""
-                println("Enter file name [or back]: ")
-                print("> ")
-                in = scala.io.StdIn.readLine()
-                if (!in.equals("back")) {
-                  try {
-                    var mixedKB = Tweety.parseFile(in)
-                    kb.defeasible ++= mixedKB.defeasible
-                    kb.classical ++= mixedKB.classical
-                    rankedKB = kb.rank()
-                    println(s"Statements from file '${in + ".kb"}' loaded.")
-                    flag = false
-                  } catch {
-                    case e: FileNotFoundException =>
-                      helpString = s"File '${in + ".kb"}' not found."
-                    case e: ParserException =>
-                      helpString = s"Parsing error in file '${in + ".kb"}'."
-                  }
-                }
-              }
-              case "r" => {
-                if (!helpString.isEmpty()) println(helpString)
-                helpString = ""
-                println("Enter file name [or back]: ")
-                print("> ")
-                in = scala.io.StdIn.readLine()
-                if (!in.equals("back")) {
-                  try {
-                    rankedKB = Tweety.parseRankedKB(in)
-                    var kb = rankedKB.mixedKnowledgeBase
-                    kb.clear
-                    kb.classical ++= kb.classical
-                    kb.defeasible ++= kb.defeasible
-                    println(
-                      s"Ranked knowledge base from file '${in + ".ranked"}' loaded."
-                    )
-                    flag = false
-                  } catch {
-                    case e: FileNotFoundException =>
-                      helpString = s"File '${in + ".ranked"}' not found."
-                    case e: ParserException =>
-                      helpString = s"Parsing error in file '${in + ".ranked"}'."
-                  }
-                }
-              }
-              case "b" => flag = false
-              case _   => helpString = s"'${in}' is not a valid option."
-            }
-          }
-          flag = true
-        }
+        case "g" => generate(kb)
+        case "a" => addStatement(kb)
+        case "r" => removeStatement(kb)
+        case "s" => saveFile(kb, rankedKB)
+        case "l" => loadFile(kb, rankedKB)
         case "c" => {
           kb.clear()
-          rankedKB = new RankedKnowledgeBase
+          rankedKB.clear()
         }
         case "p" => {
-          rankedKB.prettyPrint()
+          if (unranked) {
+            rankedKB = kb.baseRank()
+            unranked = false
+          }
+          println(rankedKB)
         }
         case "q" => flag = false
         case _   => helpString = s"'${in}' is not a valid option."
