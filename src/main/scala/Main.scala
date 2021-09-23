@@ -30,7 +30,7 @@ object Main extends App {
           if (x > 0) success
           else failure("Value <states> must be >0")
         )
-        .text("total number of states"),
+        .text("total number of defeasible statements"),
       opt[String]('d', "distribution")
         .valueName("<opt>")
         .action((x, c) =>
