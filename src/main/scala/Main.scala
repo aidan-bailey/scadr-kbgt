@@ -15,8 +15,8 @@ object Main extends App {
   val parser1 = {
     import builder._
     OParser.sequence(
-      programName("kbgen"),
-      head("kbgen", "1.0"),
+      programName("kbgt"),
+      head("kbgt", "1.0"),
       opt[Int]('r', "ranks")
         .action((x, c) => c.copy(rankCount = x))
         .validate(x =>
