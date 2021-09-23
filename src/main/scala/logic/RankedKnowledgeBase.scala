@@ -110,7 +110,7 @@ class RankedKnowledgeBase(
     while (lines.hasNext) {
       var rank = new MixedKnowledgeBase
       val line = lines.next().toString.replaceAll("\\[","").replaceAll("\\]","").replaceAll("\"", "")
-      if (!line.isBlank())
+      if (!line.isEmpty())
         rank = Parser.parseString(line)
       if (lines.hasNext) {
         result.defeasibleRanks() += rank
