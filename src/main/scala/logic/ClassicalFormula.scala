@@ -113,7 +113,7 @@ case class Const(symbol: Constant.Value) extends ClassicalFormula {
   override def getPlFormula() = Constant.getPlFormula(symbol)
 
   /** toString override. */
-  override def toString() = Constant.getNotation(symbol, Notation.Formal)
+  override def toString() = Constant.getNotation(symbol, Notation.Tweety)
 
 }
 
@@ -162,7 +162,7 @@ case class BinCon(
 
   /** toString override. */
   override def toString() =
-    s"(${leftOperand + BinOp.getNotation(operator, Notation.Formal) + rightOperand})"
+    s"(${leftOperand + BinOp.getNotation(operator, Notation.Tweety) + rightOperand})"
 
 }
 
@@ -204,6 +204,6 @@ case class UnCon(operator: UnOp.Value, operand: ClassicalFormula)
 
   /** toString override. */
   override def toString() =
-    s"(${UnOp.getNotation(operator, Notation.Formal) + operand})"
+    s"(${UnOp.getNotation(operator, Notation.Tweety) + operand})"
 
 }

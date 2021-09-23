@@ -85,6 +85,6 @@ case class DefeasibleFormula(
     new Implication(antecedent.getPlFormula(), consequent.getPlFormula())
 
   /** toString override. */
-  override def toString(): String = s"$antecedent~>$consequent"
+  override def toString(): String = s"($antecedent~>$consequent)"
 
 }
