@@ -1,86 +1,73 @@
-import skbgen.logic._
-import skbgen.kbgenerator._
-import skbgen.config._
-import skbgen.implicationgenerator._
-import skbgen.defeasiblelogic._
+import kbgt.logic._
+import kbgt.generation._
+import kbgt._
 import scopt._
-import skbgen.defeasiblelogic.baserank.BaseRank
-import skbgen.formulagenerator.FormulaGenerator
+import scala.collection._
+import org.tweetyproject.logics.pl.parser.PlParser
+import org.tweetyproject.logics.pl.syntax._
+import org.tweetyproject.commons.ParserException
+import java.io.File
+import java.io.PrintWriter
+import java.io.FileNotFoundException
 
 object Main extends App {
-
   val builder = OParser.builder[Config]
   val parser1 = {
     import builder._
     OParser.sequence(
-      programName("kbgen"),
-      head("kbgen", "1.0"),
+      programName("kbgt"),
+      head("kbgt", "1.0"),
       opt[Int]('r', "ranks")
-        .required()
         .action((x, c) => c.copy(rankCount = x))
-        .text("total number of ranks"),
-      opt[Int]('s', "states")
-        .required()
-        .action((x, c) => c.copy(stateCount = x))
-        .text("total number of states"),
-      opt[String]('t', "type")
-        .valueName("<opt>")
-        .action((x, c) =>
-          x match {
-            case "max-classical" =>
-              c.copy(statementOption = StatementOption.MaxClassical)
-            case "defeasible" =>
-              c.copy(statementOption = StatementOption.Defeasible)
-            case "mixed" =>
-              c.copy(statementOption = StatementOption.Mixed)
-          }
+        .validate(x =>
+          if (x > 0) success
+          else failure("Value <ranks> must be >0")
         )
-        .text("statement type {max-classical, defeasible, mixed}"),
+        .text("total number of defeasible ranks"),
+      opt[Int]('s', "states")
+        .action((x, c) => c.copy(stateCount = x))
+        .validate(x =>
+          if (x > 0) success
+          else failure("Value <states> must be >0")
+        )
+        .text("total number of states"),
       opt[String]('d', "distribution")
         .valueName("<opt>")
         .action((x, c) =>
           x match {
             case "uniform" =>
-              c.copy(distributionOption = DistributionOption.Uniform)
+              c.copy(distributionFunction = DistributionFunction.Uniform)
             case "exponential" =>
-              c.copy(distributionOption = DistributionOption.Exponential)
-            case "inverted-exponential" =>
-              c.copy(distributionOption =
-                DistributionOption.InvertedExponential
-              )
+              c.copy(distributionFunction = DistributionFunction.Exponential)
             case "normal" =>
-              c.copy(distributionOption = DistributionOption.Normal)
+              c.copy(distributionFunction = DistributionFunction.Normal)
+            case "inverted-exponential" =>
+              c.copy(distributionFunction =
+                DistributionFunction.InvertedExponential
+              )
             case "inverted-normal" =>
-              c.copy(distributionOption = DistributionOption.InvertedNormal)
+              c.copy(distributionFunction = DistributionFunction.InvertedNormal)
           }
         )
         .text(
-          "distribution option {uniform, exponential, inverted-exponential, inverted-normal}"
+          "distribution option {uniform, exponential, normal, inverted-exponential, inverted-normal}"
         ),
-      opt[String]('n', "notation")
-        .valueName("<opt>")
-        .action((x, c) =>
-          x match {
-            case "tweety" =>
-              c.copy(notationOption = NotationOption.Tweety)
-            case "formal" =>
-              c.copy(notationOption = NotationOption.Formal)
-            case "simple" =>
-              c.copy(notationOption = NotationOption.Simple)
-            case "latex" =>
-              c.copy(notationOption = NotationOption.Latex)
-          }
-        )
-        .text(
-          "notation option {tweety, formal, simple, latex}"
-        ),
+      opt[Unit]("defeasibleOnly")
+        .action((_, c) => c.copy(defeasible = true))
+        .text("generate only defeasible statements"),
+      opt[Unit]("conservative")
+        .action((_, c) => c.copy(conservative = true))
+        .text("use conservative form of generation"),
+      opt[Unit]("scadrFile")
+        .action((_, c) => c.copy(scadrFile = true))
+        .text("use scadr file format"),
       opt[String]('o', "out")
         .valueName("<filename>")
         .action((x, c) => c.copy(filename = x))
         .text("output file name"),
-      opt[Unit]("verbose")
-        .action((_, c) => c.copy(verbose = true))
-        .text("enable trace statements"),
+      opt[Unit]("interactive")
+        .action((_, c) => c.copy(interactive = true))
+        .text("run in interactive repl mode"),
       help("help").text("prints this usage text"),
       note("\n*First elements in option sets are defaults")
     )
@@ -88,20 +75,42 @@ object Main extends App {
 
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
-      BinOp.notation = config.notationOption
-      UnOp.notation = config.notationOption
-      println("Generating knowledge base...")
-      var (dkb, ckb) = KBGenerator.generateStructural(config)
-      println("Knowledge base generation complete.")
-      println("Writing to file...")
-      if (config.filename.equals("")) {
-        KBGenerator.outputfile("out.txt", dkb, ckb)
-        println(s"Knowledge base written to out.txt.")
-      } else {
-        KBGenerator.outputfile(config.filename, dkb, ckb)
-        println(s"Knowledge base written to ${config.filename}.")
+      var kb = new MixedKnowledgeBase
+      if (config.rankCount > 0 && config.stateCount > 0) {
+        println("Generating knowledge base...")
+        kb =
+          if (config.conservative)
+            KBGenerator.ConservativeRankedGenerate(
+              config.rankCount,
+              config.stateCount,
+              config.distributionFunction,
+              config.defeasible
+            )
+          else
+            KBGenerator.RankedGenerate(
+              config.rankCount,
+              config.stateCount,
+              config.distributionFunction,
+              config.defeasible
+            )
+        println("Knowledge base generation complete.")
+        if (config.filename.equals("")) {
+          if (!config.interactive)
+            println(kb)
+        } else {
+          println("Writing to file...")
+          if (config.scadrFile)
+            kb.writeScadrFile(config.filename + ".txt")
+          else kb.writeFile(config.filename + ".json")
+          println(s"Knowledge base written to ${config.filename + ".json"}.")
+        }
+      }
+      if (config.interactive) {
+        println("Entering interactive mode.")
+        Interactive.knowledgebaseREPL(
+          kb
+        )
       }
     case _ =>
-    // arguments are bad, error message will have been displayed
   }
 }
