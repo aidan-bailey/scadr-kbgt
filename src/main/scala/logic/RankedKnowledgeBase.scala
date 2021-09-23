@@ -107,10 +107,9 @@ class RankedKnowledgeBase(
   def readFile(filename: String): Unit = {
     var result = new RankedKnowledgeBase()
     val lines = Source.fromFile(filename).getLines().next().init.tail.split("\\],\\[").iterator
-    var rank = new MixedKnowledgeBase
     while (lines.hasNext) {
+      var rank = new MixedKnowledgeBase
       val line = lines.next().toString.replaceAll("\\[","").replaceAll("\\]","").replaceAll("\"", "")
-      println(line)
       if (!line.isBlank())
         rank = Parser.parseString(line)
       if (lines.hasNext) {
