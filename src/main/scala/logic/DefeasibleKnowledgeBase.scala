@@ -42,11 +42,12 @@ class DefeasibleKnowledgeBase(formulas: DefeasibleFormula*)
       .next()
       .init
       .tail
+      .replaceAll("\"", "")
     if (!strings.isEmpty)
       addAll(
         strings
           .split(",")
-          .map(string => Parser.parseDefeasibleFormula(string.init.tail))
+          .map(string => Parser.parseDefeasibleFormula(string))
       )
     this
   }

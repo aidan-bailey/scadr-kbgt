@@ -86,13 +86,14 @@ object Main extends App {
               config.distributionFunction,
               config.defeasible
             )
-          else
+          else {
             KBGenerator.RankedGenerate(
               config.rankCount,
               config.stateCount,
               config.distributionFunction,
               config.defeasible
             )
+          }
         println("Knowledge base generation complete.")
         if (config.filename.equals("")) {
           if (!config.interactive)

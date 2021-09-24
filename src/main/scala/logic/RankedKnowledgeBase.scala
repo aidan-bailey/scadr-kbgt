@@ -65,10 +65,13 @@ class RankedKnowledgeBase(
    *
    * @return the mixed knowledge base
    */
-  def getMixedKnowledgeBase(): MixedKnowledgeBase = {
+  def getMixedKnowledgeBase(): MixedKnowledgeBase =
     dRanks.foldLeft(new MixedKnowledgeBase())((mkb, f) => mkb ++= f).addAll(iRank)
-  }
 
+  /** Gets the PlBeliefSet counterpart of the ranked knowledge base.
+   *
+   * @return the PlBeliefSet counterpart
+   */
   def toPlBeliefSetArrayList(): ArrayList[PlBeliefSet] = {
     var result = new ArrayList[PlBeliefSet]()
     for (cbs <- dRanks.map(f => f.toPlBeliefSet())) {
@@ -104,14 +107,12 @@ class RankedKnowledgeBase(
    *
    * @param filename the filename of the specified file.
    */
-  def readFile(filename: String): Unit = {
+  def readFile(filename: String): this.type = {
     var result = new RankedKnowledgeBase()
     val lines = Source.fromFile(filename).getLines().next().init.tail.split("\\],\\[").iterator
     while (lines.hasNext) {
-      var rank = new MixedKnowledgeBase
       val line = lines.next().toString.replaceAll("\\[","").replaceAll("\\]","").replaceAll("\"", "")
-      if (!line.isEmpty())
-        rank = Parser.parseString(line)
+      val rank = new MixedKnowledgeBase(Parser.parseStrings(line).toSeq:_*)
       if (lines.hasNext) {
         result.defeasibleRanks() += rank
       } else result.infiniteRank() ++= rank
@@ -119,6 +120,7 @@ class RankedKnowledgeBase(
    clear()
    defeasibleRanks() ++= result.defeasibleRanks()
    infiniteRank() ++= result.infiniteRank()
+   this
   }
 
   /** toString override. */
@@ -156,4 +158,9 @@ class RankedKnowledgeBase(
     }
     return result.toString()
   }
+
+  /** equals method. */
+  def equals(x: RankedKnowledgeBase): Boolean =
+    x.defeasibleRanks.equals(defeasibleRanks()) && x.infiniteRank().equals(infiniteRank())
+
 }

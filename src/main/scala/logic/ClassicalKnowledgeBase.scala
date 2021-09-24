@@ -59,11 +59,12 @@ class ClassicalKnowledgeBase(formulas: ClassicalFormula*)
       .next()
       .init
       .tail
+      .replaceAll("\"", "")
     if (!strings.isEmpty)
       addAll(
         strings
           .split(",")
-          .map(string => Parser.parseClassicalFormula(string.init.tail))
+          .map(string => Parser.parseClassicalFormula(string))
       )
     this
   }

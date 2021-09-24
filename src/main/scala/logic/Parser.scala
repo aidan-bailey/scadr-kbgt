@@ -153,4 +153,32 @@ object Parser {
     return new MixedKnowledgeBase(ckb, dkb)
   }
 
+  /** Parses a string intro a mixed knowledge base.
+    * @param string
+    *   string to be parsed
+    * @return
+    *   mixed knowledge base parsed from string
+    */
+  def parseStrings(
+      string: String
+  ): Set[Formula] = {
+    var result = ListBuffer[Formula]()
+    for (formulaString <- string.split(",")) {
+      if (!formulaString.isEmpty()) {
+        if (formulaString.contains("~>")) {
+          val pos = formulaString.indexOf("~>")
+          val ante = parser.parseFormula(formulaString.substring(0, pos))
+          val desc = parser.parseFormula(formulaString.substring(pos + 2))
+          result += DefeasibleFormula(
+            tweety2formula(ante),
+            tweety2formula(desc)
+          )
+        } else {
+          result += tweety2formula(parser.parseFormula(formulaString))
+        }
+      }
+    }
+    return result.toSet
+  }
+
 }
