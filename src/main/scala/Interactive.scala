@@ -428,9 +428,9 @@ object Interactive {
         print("> ")
         in = scala.io.StdIn.readLine()
         if (!in.equals("back")) {
-          kb.writeScadrFile(in + ".json")
+          kb.writeScadrFile(in + ".txt")
           helpString =
-            s"All statements written to ${in + ".json"} using SCADR format."
+            s"All statements written to ${in + ".txt"} using SCADR format."
           return true
         }
       }
