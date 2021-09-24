@@ -206,7 +206,7 @@ object Interactive {
     if (!helpString.isEmpty()) println(helpString)
     helpString = ""
     println(
-      "Enter statement [or back]: "
+      "Enter statement (&&,||,=>,<=>,!,~>) [or back]: "
     )
     print("> ")
     var in = scala.io.StdIn.readLine()
