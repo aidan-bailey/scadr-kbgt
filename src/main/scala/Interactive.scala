@@ -38,6 +38,7 @@ object Interactive {
             defeasibleOnly
           )
           .getKnowledgeBases()
+        helpString = "Generated knowledge base."
         kb.clear()
         kb ++= newDKB
         kb ++= newCKB
@@ -53,6 +54,7 @@ object Interactive {
             defeasibleOnly
           )
           .getKnowledgeBases()
+        helpString = "Generated knowledge base using conservative style."
         kb.clear()
         kb ++= newDKB
         kb ++= newCKB
@@ -218,6 +220,7 @@ object Interactive {
         val desc =
           Parser.parseClassicalFormula(in.substring(pos + 2))
         kb -= DefeasibleFormula(ante, desc)
+        helpString = s"Added defeasible statement '$in'."
         unranked = true
         return ()
       } catch {
@@ -228,6 +231,7 @@ object Interactive {
       try {
         var formula = Parser.parseClassicalFormula(in)
         kb -= formula
+        helpString = s"Added propositional statement '$in'."
         unranked = true
         return ()
       } catch {
@@ -249,9 +253,7 @@ object Interactive {
     try {
       kb ++= new ClassicalKnowledgeBase().loadFile(in + ".json")
       unranked = true
-      println(
-        s"Classical statements from file '${in + ".json"}' loaded."
-      )
+      helpString = s"Classical statements from file '${in + ".json"}' loaded."
       return true
     } catch {
       case e: FileNotFoundException =>
@@ -274,9 +276,7 @@ object Interactive {
       kb ++= new DefeasibleKnowledgeBase()
         .loadFile(in + ".json")
       unranked = true
-      println(
-        s"Defeasible statements from file '${in + ".json"}' loaded."
-      )
+      helpString = s"Defeasible statements from file '${in + ".json"}' loaded."
       return true
     } catch {
       case e: FileNotFoundException =>
@@ -298,7 +298,7 @@ object Interactive {
     try {
       kb.loadFile(in + ".json")
       unranked = true
-      println(s"All statements from file '${in + ".json"}' loaded.")
+      helpString = s"All statements from file '${in + ".json"}' loaded."
       return true
     } catch {
       case e: FileNotFoundException =>
@@ -327,9 +327,7 @@ object Interactive {
       kb ++= mkb.getClassical
       kb ++= mkb.getDefeasible
       unranked = false
-      println(
-        s"Ranked knowledge base from file '${in + ".json"}' loaded."
-      )
+      helpString = s"Ranked knowledge base from file '${in + ".json"}' loaded."
       return true
     } catch {
       case e: FileNotFoundException =>
@@ -390,6 +388,7 @@ object Interactive {
         in = scala.io.StdIn.readLine()
         if (!in.equals("back")) {
           kb.getClassical.writeFile(in + ".json")
+          helpString = s"Classical statements written to ${in + ".json"}."
           return ()
         }
       }
@@ -401,19 +400,13 @@ object Interactive {
         in = scala.io.StdIn.readLine()
         if (!in.equals("back")) {
           kb.getDefeasible.writeFile(in + ".json")
+          helpString = s"Defeasible statements written to ${in + ".json"}."
           return ()
         }
       }
       case "m" => {
-        if (!helpString.isEmpty()) println(helpString)
-        helpString = ""
-        println("Enter file name [or back]: ")
-        print("> ")
-        in = scala.io.StdIn.readLine()
-        if (!in.equals("back")) {
-          kb.writeFile(in + ".json")
+        if (writeSCADR(kb))
           return ()
-        }
       }
       case "r" =>
         if (writeRanked(kb, rankedKB))
@@ -421,6 +414,41 @@ object Interactive {
       case _ => helpString = s"'${in}' is not a valid option."
     }
     return saveFile(kb, rankedKB)
+  }
+
+  def writeSCADR(kb: MixedKnowledgeBase): Boolean = {
+    if (!helpString.isEmpty()) println(helpString)
+    helpString = ""
+    println("Write in SCADR format? (y/n/b): ")
+    print("> ")
+    var in = scala.io.StdIn.readLine()
+    in match {
+      case "y" => {
+        println("Enter file name [or back]: ")
+        print("> ")
+        in = scala.io.StdIn.readLine()
+        if (!in.equals("back")) {
+          kb.writeScadrFile(in + ".json")
+          helpString =
+            s"All statements written to ${in + ".json"} using SCADR format."
+          return true
+        }
+      }
+      case "n" => {
+        println("Enter file name [or back]: ")
+        print("> ")
+        in = scala.io.StdIn.readLine()
+        if (!in.equals("back")) {
+          kb.writeFile(in + ".json")
+          helpString = s"All statements written to ${in + ".json"}."
+          return true
+        }
+      }
+      case "b" =>
+        return false
+      case _ => helpString = s"'${in}' is not a valid option."
+    }
+    return writeSCADR(kb)
   }
 
   def writeRanked(
@@ -437,6 +465,7 @@ object Interactive {
     if (unranked)
       rankedKB.replace(kb.baseRank())
     rankedKB.writeFile(in + ".json")
+    helpString = s"Ranked knowledge base written to ${in + ".json"}."
     return true
   }
 
@@ -458,6 +487,7 @@ object Interactive {
         val desc =
           Parser.parseClassicalFormula(in.substring(pos + 2))
         kb += DefeasibleFormula(ante, desc)
+        helpString = s"Added defeasible statement ${in}."
         unranked = true
         return ()
       } catch {
@@ -468,6 +498,7 @@ object Interactive {
       try {
         var formula = Parser.parseClassicalFormula(in)
         kb += formula
+        helpString = s"Added classical statement ${in}."
         unranked = true
         return ()
       } catch {
