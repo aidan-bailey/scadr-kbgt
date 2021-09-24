@@ -13,7 +13,7 @@ import scala.io.Source
 
 /** A defeasible propositional knowledge base.
   *
-  * Extends [[skben.logic.KnowledgeBase]]
+  * Extends [[kbgt.logic.KnowledgeBase]]
   */
 class DefeasibleKnowledgeBase(formulas: DefeasibleFormula*)
     extends KnowledgeBase[DefeasibleFormula](

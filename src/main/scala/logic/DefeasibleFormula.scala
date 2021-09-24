@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 /** A defeasible implication.
   *
-  * Extends [[skbgen.logic.Formula]]
+  * Extends [[kbgt.logic.Formula]]
   * @constructor
   *   create a new defeasible formula with an antecedent and consequent
   * @param antecedent

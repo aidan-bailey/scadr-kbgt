@@ -3,10 +3,7 @@ package kbgt.logic
 import kbgt._
 import org.tweetyproject.logics.pl.syntax._
 
-/** A connective operator.
-  *
-  * Extends [[scala.Enumeration]]
-  */
+/** A connective operator. */
 sealed trait Operator extends Enumeration {
 
   /** Gets operator notation.
@@ -30,17 +27,14 @@ sealed trait Operator extends Enumeration {
   def getParseNotation(op: Value): String
 }
 
-/** Operator notations.
-  *
-  * Extends [[scala.Enumeration]]
-  */
+/** Operator notations. */
 object Notation extends Enumeration {
   val Tweety, Latex, Formal = Value
 }
 
 /** The Binary connective operators.
   *
-  * Extends [skbgen.logic.Operator]
+  * Extends [kbgt.logic.Operator]
   */
 object BinOp extends Operator {
 
@@ -124,7 +118,7 @@ object BinOp extends Operator {
 
 /** The Unary connective operators.
   *
-  * Extends [[skbgen.logic.Operator]]
+  * Extends [[kbgt.logic.Operator]]
   */
 object UnOp extends Operator {
 
@@ -184,10 +178,7 @@ object UnOp extends Operator {
 
 }
 
-/** The constant symbol values.
-  *
-  * Extends [[scala.Enumeration]]
-  */
+/** The constant symbol values. */
 object Constant extends Enumeration {
 
   val Tautology, Contradiction = Value

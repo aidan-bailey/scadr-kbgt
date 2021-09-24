@@ -10,8 +10,6 @@ import org.tweetyproject.logics.pl.syntax.PlBeliefSet
 
 /** A propositional knowledge base.
  *
- * Extends [[scala.collection.Set]]
- *
  * @constructor create a knowledge base with a set of propositional formulas
  * @param kb the set of propositional formulas.
  */

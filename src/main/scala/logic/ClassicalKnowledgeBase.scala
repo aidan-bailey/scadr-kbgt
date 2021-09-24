@@ -14,7 +14,7 @@ import scala.io.Source
 
 /** A classical propositional knowledge base.
   *
-  * Extends [[skbgen.logic.KnowledgeBase]]
+  * Extends [[kbgt.logic.KnowledgeBase]]
   *
   * @constructor
   *   create a new classical knowledge base with a sequence of classical

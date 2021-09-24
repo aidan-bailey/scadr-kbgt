@@ -13,7 +13,7 @@ import scala.io.Source
 
 /** A mixed propositional knowledge base.
   *
-  * Extends [[skbgen.logic.KnowledgeBase]]
+  * Extends [[kbgt.logic.KnowledgeBase]]
   *
   * @constructor
   *   create a mixed knowledge base with a sequence of formulas

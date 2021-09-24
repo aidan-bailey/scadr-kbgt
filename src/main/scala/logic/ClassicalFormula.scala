@@ -13,7 +13,7 @@ import org.tweetyproject.logics.pl.semantics.PossibleWorld
 
 /** A classical propositional formula.
   *
-  * Extends [[skbgen.formula]]
+  * Extends [[kbgt.logic.Formula]]
   */
 sealed abstract trait ClassicalFormula extends Formula {
 
@@ -47,7 +47,7 @@ sealed abstract trait ClassicalFormula extends Formula {
 
 /** A propositional atom.
   *
-  * Extends [[skbgen.logic.ClassicalFormula]]
+  * Extends [[kbgt.logic.ClassicalFormula]]
   * @constructor
   *   create a new atom with a name
   * @param name
@@ -83,7 +83,7 @@ case class Atom(name: String) extends ClassicalFormula {
 
 /** A propositional constant.
   *
-  * Extends [[skbgen.logic.ClassicalFormula]]
+  * Extends [[kbgt.logic.ClassicalFormula]]
   * @constructor
   *   create a new constant with a constant symbol
   * @param symbol
@@ -119,7 +119,7 @@ case class Const(symbol: Constant.Value) extends ClassicalFormula {
 
 /** A Binary connective.
   *
-  * Extends [[skbgen.logic.ClassicalFormula]]
+  * Extends [[kbgt.logic.ClassicalFormula]]
   * @constructor
   *   create a new binary connective with a binary operator, left classical
   *   formula operand and right classical formula operand
@@ -168,7 +168,7 @@ case class BinCon(
 
 /** A propositional unary connective.
   *
-  * Extends [[skbgen.logic.ClassicalFormula]]
+  * Extends [[kbgt.logic.ClassicalFormula]]
   * @constructor
   *   create a new unary connective with a unary operator and classical formula
   *   operand
