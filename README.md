@@ -15,5 +15,5 @@ A **jar** file will be compiled to the `target/scala-2.13` directory.
 This can be run using
 
 ```sh
-scala skgt-assembly-*.0.jar
+scala skgt-assembly-*.0.jar --help
 ```
