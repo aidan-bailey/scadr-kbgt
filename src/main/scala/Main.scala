@@ -100,10 +100,15 @@ object Main extends App {
             println(kb)
         } else {
           println("Writing to file...")
-          if (config.scadrFile)
+          if (config.scadrFile) {
             kb.writeScadrFile(config.filename + ".txt")
-          else kb.writeFile(config.filename + ".json")
-          println(s"Knowledge base written to ${config.filename + ".json"}.")
+            println(s"Knowledge base written to ${config.filename + ".txt"}.")
+          } else {
+            kb.writeFile(config.filename + ".json")
+            println(
+              s"Knowledge base written to ${config.filename + ".json"}."
+            )
+          }
         }
       }
       if (config.interactive) {
