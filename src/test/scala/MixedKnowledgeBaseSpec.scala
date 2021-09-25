@@ -10,7 +10,7 @@ import scala.collection.mutable.ListBuffer
 
 class MixedKnowledgeBaseSpec extends AnyFunSpec {
   describe("The MixedKnowledgeBase can") {
-    it("be constructed from a sequence of MixedKnowledgeBase") {
+    it("be constructed from a sequence of Formulas") {
       val kb = new MixedKnowledgeBase(
         Atom("a"),
         DefeasibleFormula(Atom("a"), Atom("b"))
