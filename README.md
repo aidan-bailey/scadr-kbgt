@@ -1,4 +1,4 @@
-# Knowledge Base Generation Tool (SKGT)
+# Knowledge Base Generation Tool (KBGT)
 
 SKGT requires Java 16 to run owing to the TweetyProject dependency.
 
